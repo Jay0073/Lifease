@@ -133,7 +133,7 @@ const VisualAssistantScreen = ({ navigation }) => {
            accessibilityHint="Press and hold to speak to the assistant."
         >
            <View style={styles.voiceAssistantContent}>
-               <Ionicons name="mic-outline" size={80} color="#2c3e50" />
+               <Ionicons name="mic-outline" size={50} color="#2c3e50" />
                <Text style={styles.voiceAssistantText}>
                    Hold to Talk with Assistant
                </Text>
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   cameraSection: {
-    height: screenHeight * 0.40,
+    height: screenHeight * 0.55,
     backgroundColor: '#ecf0f1',
     borderRadius: 10,
     justifyContent: 'center',
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   voiceAssistantSection: {
-    height: 180,
+    height: 120,
     backgroundColor: '#3498db',
     borderRadius: 10,
     justifyContent: 'center',
@@ -225,6 +225,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 10,
     fontWeight: 'bold',
+   //  marginBottom: 10,
   },
 });
 
