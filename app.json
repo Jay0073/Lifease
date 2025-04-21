@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Lifease-2",
-    "slug": "Lifease-2",
+    "slug": "lifease",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -16,6 +16,8 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.yourcompany.yourappname",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -23,6 +25,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "de35a233-bdfa-426b-99e1-9674fa9956aa"
+      }
+    },
+    "owner": "jay0073"
   }
 }
