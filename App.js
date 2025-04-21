@@ -1,104 +1,20 @@
-// // App.js
-// import React from 'react';
-// import { NavigationContainer } from '@react-navigation/native';
-// import { createNativeStackNavigator } from '@react-navigation/native-stack';
-// import { TouchableOpacity, Text } from 'react-native'; // Import TouchableOpacity and Text for header icons
-// import Ionicons from '@expo/vector-icons/Ionicons'; // Import Ionicons for icons
-
-// // Import your screens
-// import HomeScreen from './screens/HomeScreen';
-// import ProfileScreen from './screens/ProfileScreen'; // Keep Profile for now, maybe used later
-// import SettingsScreen from './screens/SettingsScreen';
-// import VisualAssistantScreen from './screens/VisualAssistantScreen';
-// import DumbAssistantScreen from './screens/DumbAssistantScreen'; // Note on naming below
-// import DeafAssistantScreen from './screens/DeafAssistantScreen';
-// import AIAssistantScreen from './screens/AIAssistantScreen';
-
-// const Stack = createNativeStackNavigator();
-
-// export default function App() {
-//   return (
-//     <NavigationContainer>
-//       <Stack.Navigator initialRouteName="Home">
-
-//         {/* Home Screen Definition */}
-//         {/* Ensure there are no extra empty lines or characters directly here */}
-//         <Stack.Screen
-//           name="Home"
-//           component={HomeScreen}
-//           options={({ navigation }) => ({
-//             title: 'LifeEasy', // App Name in Header
-//             headerStyle: {
-//               backgroundColor: '#f8f8f8', // Example header background
-//             },
-//             headerTitleStyle: {
-//               fontWeight: 'bold',
-//             },
-//             headerLeft: () => (
-//               // Hamburger Icon (Placeholder - typically for Drawer Nav)
-//               <TouchableOpacity
-//                 onPress={() => {
-//                   // TODO: Implement opening a Drawer Navigator here later
-//                   console.log('Hamburger Pressed');
-//                   // Example: navigation.openDrawer(); if using Drawer Navigator
-//                 }}
-//                 style={{ marginLeft: 15 }}
-//               >
-//                  <Ionicons name="menu" size={28} color="#000" />
-//               </TouchableOpacity>
-//             ),
-//             headerRight: () => (
-//               // Settings Icon
-//               <TouchableOpacity
-//                 onPress={() => navigation.navigate('Settings')} // Navigate to Settings screen
-//                 style={{ marginRight: 15 }}
-//               >
-//                 <Ionicons name="settings-outline" size={24} color="#000" />
-//               </TouchableOpacity>
-//             ),
-//           })}
-//         />
-
-//         {/* Other Screens */}
-//         {/* Ensure there are no extra empty lines or characters directly here */}
-//         <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'My Profile' }} />
-//         {/* Ensure there are no extra empty lines or characters directly here */}
-//         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
-//         {/* Ensure there are no extra empty lines or characters directly here */}
-//         <Stack.Screen name="VisualAssistant" component={VisualAssistantScreen} options={{ title: 'Visual Assistant' }} />
-//         {/* Ensure there are no extra empty lines or characters directly here */}
-//         <Stack.Screen name="DumbAssistant" component={DumbAssistantScreen} options={{ title: 'Dumb Assistant' }} /> {/* Note on naming below */}
-//         {/* Ensure there are no extra empty lines or characters directly here */}
-//         <Stack.Screen name="DeafAssistant" component={DeafAssistantScreen} options={{ title: 'Deaf Assistant' }} />
-//         {/* Ensure there are no extra empty lines or characters directly here */}
-//         <Stack.Screen name="AIAssistant" component={AIAssistantScreen} options={{ title: 'AI Assistant' }} />
-//         {/* Ensure there are no extra empty lines or characters directly here */}
-
-//       </Stack.Navigator>
-//     </NavigationContainer>
-//   );
-// }
-
-
-
-// App.js - TEMPORARY SIMPLIFIED VERSION + Header Icons
-// 
-
-
+// App.js - Integrated Navigation and Latest Styling
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-// Uncomment these imports to use header icons
+// Necessary imports for header icons and components
 import { TouchableOpacity } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
-// Import only the HomeScreen as a starting point
+// Import ALL your screens
 import HomeScreen from './screens/HomeScreen';
-
-// Uncomment and add other screens as needed
-// import ProfileScreen from './screens/ProfileScreen';
-// import SettingsScreen from './screens/SettingsScreen';
+import SettingsScreen from './screens/SettingsScreen'; // Required for Settings icon navigation
+import VisualAssistantScreen from './screens/VisualAssistantScreen';
+import DumbAssistantScreen from './screens/DumbAssistantScreen'; // Remember naming note
+import DeafAssistantScreen from './screens/DeafAssistantScreen';
+import AIAssistantScreen from './screens/AIAssistantScreen';
+import ProfileScreen from './screens/ProfileScreen'; // Keep Profile screen definition
 
 const Stack = createNativeStackNavigator();
 
@@ -106,12 +22,14 @@ export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Home">
-        {/* Home Screen Definition */}
+
+        {/* Home Screen Definition with provided Header Styling */}
         <Stack.Screen
-          name="Home"
-          component={HomeScreen}
+          name="Home" // Screen name used for navigation
+          component={HomeScreen} // Component to render for this screen
           options={({ navigation }) => ({
             title: 'LifeEasy', // Header Title
+            // --- Header Styling from your latest App.js ---
             headerStyle: {
               backgroundColor: '#ffffff', // White header background
             },
@@ -122,13 +40,15 @@ export default function App() {
             },
             headerTitleAlign: 'center', // Center align the title
             headerShadowVisible: true, // Add shadow for depth (optional)
+            // --- End Header Styling ---
             headerLeft: () => (
               // Hamburger Icon for left header button
               <TouchableOpacity
                 onPress={() => {
                   console.log('Hamburger Pressed');
+                  // TODO: Implement opening a Drawer Navigator here later
                 }}
-                style={{ marginLeft: 20 }}
+                style={{ marginLeft: 20 }} // Spacing from the left edge
               >
                 <Ionicons name="menu" size={28} color="#000" />
               </TouchableOpacity>
@@ -137,10 +57,10 @@ export default function App() {
               // Settings Icon for right header button
               <TouchableOpacity
                 onPress={() => {
-                  console.log('Navigate to Settings Screen'); // Optionally navigate to 'Settings'
-                  // navigation.navigate('Settings'); Ensure Settings screen exists in the stack
+                   console.log('Navigate to Settings Screen');
+                   navigation.navigate('Settings'); // Navigate to 'Settings' screen
                 }}
-                style={{ marginRight: 20 }}
+                style={{ marginRight: 20 }} // Spacing from the right edge
               >
                 <Ionicons name="settings-outline" size={24} color="#000" />
               </TouchableOpacity>
@@ -148,14 +68,52 @@ export default function App() {
           })}
         />
 
-        {/* Define other screens here */}
-        {/* Example:
-        <Stack.Screen 
-          name="Settings" 
-          component={SettingsScreen} 
-          options={{title: 'Settings'}}
+        {/* --- Define ALL Other Screens in the Navigator --- */}
+        {/* These screens will be pushed onto the stack when navigated to */}
+
+        {/* Settings Screen */}
+        <Stack.Screen
+          name="Settings" // Name used for navigation (e.g., navigation.navigate('Settings'))
+          component={SettingsScreen}
+          options={{ title: 'Settings' }} // Header title for this screen
         />
-        */}
+
+        {/* Visual Assistant Screen */}
+        <Stack.Screen
+          name="VisualAssistant"
+          component={VisualAssistantScreen}
+          options={{ title: 'Visual Assistant' }}
+        />
+
+        {/* Dumb Assistant Screen (Consider renaming) */}
+        <Stack.Screen
+          name="DumbAssistant"
+          component={DumbAssistantScreen}
+          options={{ title: 'Dumb Assistant' }}
+        />
+
+        {/* Deaf Assistant Screen */}
+        <Stack.Screen
+          name="DeafAssistant"
+          component={DeafAssistantScreen}
+          options={{ title: 'Deaf Assistant' }}
+        />
+
+        {/* AI Assistant Screen */}
+        <Stack.Screen
+          name="AIAssistant"
+          component={AIAssistantScreen}
+          options={{ title: 'AI Assistant' }}
+        />
+
+        {/* Profile Screen - Include if needed elsewhere */}
+        <Stack.Screen
+           name="Profile"
+           component={ProfileScreen}
+           options={{ title: 'My Profile' }}
+        />
+
+
       </Stack.Navigator>
     </NavigationContainer>
   );

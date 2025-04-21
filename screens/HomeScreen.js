@@ -1,4 +1,4 @@
-// screens/HomeScreen.js - Updated Placeholder Footer
+// screens/HomeScreen.js - Updated with Navigation Calls
 import React from 'react';
 import {
   View,
@@ -16,7 +16,7 @@ const padding = 15;
 const gap = 15;
 const optionSize = (width - padding * 2 - gap) / 2;
 
-const HomeScreen = ({ navigation }) => {
+const HomeScreen = ({ navigation }) => { // HomeScreen receives the 'navigation' prop
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f0f4f8' }}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -35,7 +35,8 @@ const HomeScreen = ({ navigation }) => {
             {/* Visual Assistant Option */}
             <TouchableOpacity
               style={styles.optionButton}
-              onPress={() => console.log('Navigate to Visual Assistant (placeholder)')}
+              // Use navigation.navigate with the screen name defined in App.js
+              onPress={() => navigation.navigate('VisualAssistant')} // Navigate to VisualAssistantScreen
             >
                <Ionicons name="eye-outline" size={40} color="#fff" />
               <Text style={styles.optionText}>Visual Assistant</Text>
@@ -44,7 +45,7 @@ const HomeScreen = ({ navigation }) => {
             {/* Voice Assistant Option (formerly Dumb) */}
             <TouchableOpacity
               style={styles.optionButton}
-               onPress={() => console.log('Navigate to Voice Assistant (placeholder)')}
+               onPress={() => navigation.navigate('DumbAssistant')} // Navigate to DumbAssistantScreen
             >
               <Ionicons name="mic-outline" size={40} color="#fff" />
               <Text style={styles.optionText}>Voice Assistant</Text>
@@ -53,7 +54,7 @@ const HomeScreen = ({ navigation }) => {
             {/* Deaf Assistant Option */}
             <TouchableOpacity
               style={styles.optionButton}
-              onPress={() => console.log('Navigate to Deaf Assistant (placeholder)')}
+              onPress={() => navigation.navigate('DeafAssistant')} // Navigate to DeafAssistantScreen
             >
                <Ionicons name="ear-outline" size={40} color="#fff" />
               <Text style={styles.optionText}>Deaf Assistant</Text>
@@ -62,7 +63,7 @@ const HomeScreen = ({ navigation }) => {
             {/* AI Assistant Option */}
             <TouchableOpacity
               style={styles.optionButton}
-              onPress={() => console.log('Navigate to AI Assistant (placeholder)')}
+              onPress={() => navigation.navigate('AIAssistant')} // Navigate to AIAssistantScreen
             >
                <Ionicons name="sparkles-outline" size={40} color="#fff" />
               <Text style={styles.optionText}>AI Assistant</Text>
@@ -70,29 +71,31 @@ const HomeScreen = ({ navigation }) => {
           </View>
 
           {/* --- Placeholder Footer --- */}
+           {/* This is a visual placeholder only - real navigation footer is done in App.js */}
           <View style={styles.placeholderFooter}></View>
 
         </View>
       </ScrollView>
 
       {/* --- Visual Footer Bar (Placeholder) --- */}
+       {/* This View simulates the bottom tab bar appearance */}
        <View style={styles.visualFooterBar}>
-           <TouchableOpacity style={styles.footerOption}>
+           {/* These buttons are for visual simulation ONLY. Real tab navigation is in App.js */}
+           <TouchableOpacity style={styles.footerOption} onPress={() => console.log('Home Placeholder Press')}>
                <Ionicons name="home" size={24} color="#007AFF" />
                <Text style={styles.footerOptionText}>Home</Text>
            </TouchableOpacity>
-            <TouchableOpacity style={styles.footerOption}>
+            <TouchableOpacity style={styles.footerOption} onPress={() => console.log('History Placeholder Press')}>
                <Ionicons name="time-outline" size={24} color="#555" />
                <Text style={styles.footerOptionText}>History</Text>
            </TouchableOpacity>
-            <TouchableOpacity style={styles.footerOption}>
+            <TouchableOpacity style={styles.footerOption} onPress={() => console.log('Help Placeholder Press')}>
                <Ionicons name="help-circle-outline" size={24} color="#555" />
                <Text style={styles.footerOptionText}>Help</Text>
            </TouchableOpacity>
-            {/* Changed from Benefits to Profile */}
-            <TouchableOpacity style={styles.footerOption}>
-               <Ionicons name="person-outline" size={24} color="#555" /> {/* Profile Icon */}
-               <Text style={styles.footerOptionText}>Profile</Text> {/* Profile Text */}
+            <TouchableOpacity style={styles.footerOption} onPress={() => console.log('Profile Placeholder Press')}>
+               <Ionicons name="person-outline" size={24} color="#555" />
+               <Text style={styles.footerOptionText}>Profile</Text>
            </TouchableOpacity>
        </View>
 
