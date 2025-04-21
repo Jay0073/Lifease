@@ -23,7 +23,7 @@ const initialMessages = [
 
 // Define the list of AI features
 const aiFeatures = [
-    { label: 'Select a Feature', value: null }, // Default option
+    // { label: 'Select a Feature', value: null }, // Default option
     { label: 'Generate Text', value: 'generate_text' },
     { label: 'Analyze Image', value: 'analyze_image' },
     { label: 'Code Help', value: 'code_help' },
