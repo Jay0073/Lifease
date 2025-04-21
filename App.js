@@ -1,120 +1,171 @@
-// App.js - Integrated Navigation and Latest Styling
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
+import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-
-// Necessary imports for header icons and components
-import { TouchableOpacity } from 'react-native';
+import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 // Import ALL your screens
 import HomeScreen from './screens/HomeScreen';
-import SettingsScreen from './screens/SettingsScreen'; // Required for Settings icon navigation
+import SettingsScreen from './screens/SettingsScreen';
 import VisualAssistantScreen from './screens/VisualAssistantScreen';
-import DumbAssistantScreen from './screens/DumbAssistantScreen'; // Remember naming note
+import DumbAssistantScreen from './screens/DumbAssistantScreen';
 import DeafAssistantScreen from './screens/DeafAssistantScreen';
 import AIAssistantScreen from './screens/AIAssistantScreen';
-import ProfileScreen from './screens/ProfileScreen'; // Keep Profile screen definition
+import ProfileScreen from './screens/ProfileScreen';
 
 const Stack = createNativeStackNavigator();
+const Drawer = createDrawerNavigator();
 
+// Define the Stack Navigator
+function StackNavigator({ navigation }) {
+  return (
+    <Stack.Navigator
+      initialRouteName="Home"
+      screenOptions={{
+        headerStyle: { backgroundColor: '#ffffff' },
+        headerTitleAlign: 'left', // Align the title to the left
+        headerShadowVisible: true,
+        headerRight: () => (
+          <TouchableOpacity
+            onPress={() => navigation.openDrawer()} // Open the drawer
+            style={{ marginRight: 20 }}
+          >
+            <Ionicons name="menu" size={28} color="#000" />
+          </TouchableOpacity>
+        ),
+        headerTitle: ({ children }) => (
+          <View style={styles.headerTitleContainer}>
+            <Ionicons name="leaf-outline" size={24} color="#000" style={{ marginRight: 8 }} />
+            <Text style={styles.headerTitleText}>{children}</Text>
+          </View>
+        ),
+      }}
+    >
+      <Stack.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{
+          title: 'Home', // Title for the Home screen
+        }}
+      />
+      <Stack.Screen
+        name="VisualAssistant"
+        component={VisualAssistantScreen}
+        options={{
+          title: 'Visual Assistant', // Title for the Visual Assistant screen
+        }}
+      />
+      <Stack.Screen
+        name="DumbAssistant"
+        component={DumbAssistantScreen}
+        options={{
+          title: 'Voice Assistant', // Title for the Voice Assistant screen
+        }}
+      />
+      <Stack.Screen
+        name="DeafAssistant"
+        component={DeafAssistantScreen}
+        options={{
+          title: 'Deaf Assistant', // Title for the Deaf Assistant screen
+        }}
+      />
+      <Stack.Screen
+        name="AIAssistant"
+        component={AIAssistantScreen}
+        options={{
+          title: 'AI Assistant', // Title for the AI Assistant screen
+        }}
+      />
+      <Stack.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{
+          title: 'Settings', // Title for the Settings screen
+        }}
+      />
+      <Stack.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{
+          title: 'My Profile', // Title for the Profile screen
+        }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+// Define the Drawer Navigator
 export default function App() {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Home">
-
-        {/* Home Screen Definition with provided Header Styling */}
-        <Stack.Screen
-          name="Home" // Screen name used for navigation
-          component={HomeScreen} // Component to render for this screen
-          options={({ navigation }) => ({
-            title: 'LifeEasy', // Header Title
-            // --- Header Styling from your latest App.js ---
-            headerStyle: {
-              backgroundColor: '#ffffff', // White header background
-            },
-            headerTitleStyle: {
-              fontWeight: 'bold', // Bold title
-              fontSize: 22, // Slightly larger than default
-              color: '#000000', // Black text
-            },
-            headerTitleAlign: 'center', // Center align the title
-            headerShadowVisible: true, // Add shadow for depth (optional)
-            // --- End Header Styling ---
-            headerLeft: () => (
-              // Hamburger Icon for left header button
-              <TouchableOpacity
-                onPress={() => {
-                  console.log('Hamburger Pressed');
-                  // TODO: Implement opening a Drawer Navigator here later
-                }}
-                style={{ marginLeft: 20 }} // Spacing from the left edge
-              >
-                <Ionicons name="menu" size={28} color="#000" />
-              </TouchableOpacity>
-            ),
-            headerRight: () => (
-              // Settings Icon for right header button
-              <TouchableOpacity
-                onPress={() => {
-                   console.log('Navigate to Settings Screen');
-                   navigation.navigate('Settings'); // Navigate to 'Settings' screen
-                }}
-                style={{ marginRight: 20 }} // Spacing from the right edge
-              >
-                <Ionicons name="settings-outline" size={24} color="#000" />
-              </TouchableOpacity>
-            ),
-          })}
+      <Drawer.Navigator
+        initialRouteName="HomeStack"
+        screenOptions={{
+          headerShown: false, // Disable the Drawer header
+          drawerActiveTintColor: '#2196F3',
+          drawerInactiveTintColor: 'gray',
+          drawerLabelStyle: { fontSize: 16 },
+          drawerContentStyle: { paddingTop: 20 }, // Add padding to the top of the sidebar items
+        }}
+      >
+        <Drawer.Screen
+          name="HomeStack"
+          component={StackNavigator}
+          options={{
+            drawerIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
+            title: 'Home',
+          }}
         />
-
-        {/* --- Define ALL Other Screens in the Navigator --- */}
-        {/* These screens will be pushed onto the stack when navigated to */}
-
-        {/* Settings Screen */}
-        <Stack.Screen
-          name="Settings" // Name used for navigation (e.g., navigation.navigate('Settings'))
+        <Drawer.Screen
+          name="Profile"
+          component={ProfileScreen}
+          options={{
+            drawerIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} />,
+          }}
+        />
+        <Drawer.Screen
+          name="Settings"
           component={SettingsScreen}
-          options={{ title: 'Settings' }} // Header title for this screen
+          options={{
+            drawerIcon: ({ color, size }) => <Ionicons name="settings-outline" size={size} color={color} />,
+          }}
         />
-
-        {/* Visual Assistant Screen */}
-        <Stack.Screen
-          name="VisualAssistant"
-          component={VisualAssistantScreen}
-          options={{ title: 'Visual Assistant' }}
+        <Drawer.Screen
+          name="Feedback"
+          component={SettingsScreen}
+          options={{
+            drawerIcon: ({ color, size }) => <Ionicons name="chatbubble-outline" size={size} color={color} />,
+          }}
         />
-
-        {/* Dumb Assistant Screen (Consider renaming) */}
-        <Stack.Screen
-          name="DumbAssistant"
-          component={DumbAssistantScreen}
-          options={{ title: 'Dumb Assistant' }}
+        <Drawer.Screen
+          name="About"
+          component={SettingsScreen}
+          options={{
+            drawerIcon: ({ color, size }) => <Ionicons name="information-circle-outline" size={size} color={color} />,
+          }}
         />
-
-        {/* Deaf Assistant Screen */}
-        <Stack.Screen
-          name="DeafAssistant"
-          component={DeafAssistantScreen}
-          options={{ title: 'Deaf Assistant' }}
+        <Drawer.Screen
+          name="Help Center"
+          component={SettingsScreen}
+          options={{
+            drawerIcon: ({ color, size }) => <Ionicons name="help-circle-outline" size={size} color={color} />,
+          }}
         />
-
-        {/* AI Assistant Screen */}
-        <Stack.Screen
-          name="AIAssistant"
-          component={AIAssistantScreen}
-          options={{ title: 'AI Assistant' }}
-        />
-
-        {/* Profile Screen - Include if needed elsewhere */}
-        <Stack.Screen
-           name="Profile"
-           component={ProfileScreen}
-           options={{ title: 'My Profile' }}
-        />
-
-
-      </Stack.Navigator>
+      </Drawer.Navigator>
     </NavigationContainer>
   );
 }
+
+// Styles for the header title
+const styles = StyleSheet.create({
+  headerTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerTitleText: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#000',
+  },
+});
