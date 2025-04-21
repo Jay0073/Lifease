@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   cameraSection: {
-    height: screenHeight * 0.55,
+    height: screenHeight * 0.58,
     backgroundColor: '#ecf0f1',
     borderRadius: 10,
     justifyContent: 'center',
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   quickActionsBar: {
-    height: 80,
+    height: 90,
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
@@ -223,7 +223,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#fff',
     textAlign: 'center',
-    marginTop: 10,
     fontWeight: 'bold',
    //  marginBottom: 10,
   },
