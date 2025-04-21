@@ -1,18 +1,20 @@
-// screens/DumbAssistantScreen.js - Voice Assistant Layout and Styling
+// screens/DumbAssistantScreen.js - Voice Assistant (Text Input, TTS Output)
 import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView, // Use ScrollView in case output gets long
+  ScrollView,
   SafeAreaView,
-  Dimensions // To potentially size elements based on screen
+  Dimensions,
+  TextInput, // Import TextInput
+  KeyboardAvoidingView, // To handle keyboard
+  Platform, // To handle keyboard
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons'; // For icons
-// Example libraries for voice functionality (install separately):
-// import Tts from 'react-native-tts'; // For Text-to-Speech (speaking text aloud)
-// import Voice from '@react-native-community/voice'; // For Speech-to-Text (listening to user)
+// Example library for Text-to-Speech (install separately):
+// import Tts from 'react-native-tts';
 
 // Note: This component uses the file name "DumbAssistantScreen" as requested.
 // In the UI, we will use "Voice Assistant".
@@ -21,171 +23,202 @@ const { width } = Dimensions.get('window');
 const padding = 20; // General padding
 
 const DumbAssistantScreen = ({ navigation }) => { // Component name as requested
-    // State to manage the status message displayed (e.g., "Tap to speak", "Listening...")
-    const [assistantStatus, setAssistantStatus] = useState("Tap the microphone to speak.");
+    // State to manage the status message displayed (e.g., "Ready...", "Speaking...")
+    const [assistantStatus, setAssistantStatus] = useState("Ready to speak.");
     // State to hold the text the assistant might display (e.g., the response text)
-    const [outputText, setOutputText] = useState(""); // Text to be potentially read aloud
+    const [outputText, setOutputText] = useState(""); // Text that is being spoken or was last spoken
+     // State to hold the text entered by the user
+    const [textToSpeak, setTextToSpeak] = useState('');
 
-    // --- Placeholder/Example Voice Functionality ---
-    // You would need to install and configure react-native-tts and/or
-    // @react-native-community/voice libraries for actual voice features.
 
-    // Example function to make the assistant "speak" text
+    // --- Placeholder/Example Text-to-Speech (TTS) Functionality ---
+    // You would need to install and configure react-native-tts for actual speech output.
+
+    // Function to make the assistant "speak" text
     const speakText = (text) => {
+        if (!text.trim()) {
+            setAssistantStatus("Nothing to speak.");
+            setOutputText("");
+            return;
+        }
         setOutputText(text); // Display text that will be spoken
+        setAssistantStatus("Speaking...");
         // TODO: Use Tts.speak(text) here with a TTS library
         console.log("Speaking:", text); // Log for now
+
+        // Simulate speaking duration and then reset status
+        const speechDuration = text.length * 50; // Estimate duration based on text length
+        setTimeout(() => {
+            setAssistantStatus("Ready to speak.");
+        }, speechDuration > 1000 ? speechDuration : 1000); // Minimum 1 sec duration
     };
 
-    // Example function to handle microphone button press (start listening)
-    const handleMicButtonPress = () => {
-        console.log('Microphone button pressed');
-        setAssistantStatus("Listening..."); // Update status
-        setOutputText(""); // Clear previous output text
-
-        // TODO: Use Voice.start() here with a STT library to begin listening
-        // For now, simulate a response after a delay
-        setTimeout(() => {
-            const exampleResponse = "Hello! How can I help you today?";
-            setAssistantStatus("Speaking...");
-            speakText(exampleResponse); // Call speakText placeholder
-             // After speaking finishes (you'd use TTS event listeners for this),
-             // reset status: setAssistantStatus("Tap the microphone to speak.");
-        }, 1500); // Simulate processing delay
+    // Handler for the "Speak" button
+    const handleSpeakButtonPress = () => {
+        speakText(textToSpeak); // Speak the text from the input field
+        // Optionally clear the input field after speaking:
+        // setTextToSpeak('');
     };
 
      // Example function to handle predefined action button presses
      const handlePredefinedAction = (action) => {
          console.log(`Predefined action pressed: ${action}`);
-         setAssistantStatus(`Processing ${action}...`);
+         setAssistantStatus(`Getting ${action}...`);
          setOutputText(""); // Clear previous output
 
-         // TODO: Implement logic for predefined actions
+         // TODO: Implement logic for predefined actions and call speakText
          if (action === 'time') {
              const now = new Date();
              const timeString = now.toLocaleTimeString();
-             setAssistantStatus("Speaking...");
+             setAssistantStatus("Speaking Time...");
              speakText(`The current time is ${timeString}.`); // Speak the time
          } else if (action === 'weather') {
               // TODO: Get weather data (requires Location API and Weather API)
-               setAssistantStatus("Speaking...");
+               setAssistantStatus("Speaking Weather...");
               speakText("Please tell me your location to get the weather."); // Placeholder response
          } else if (action === 'read_text') {
-              // TODO: Implement text reading (e.g., read text from clipboard or a dedicated input field)
-               setAssistantStatus("Speaking...");
-              speakText("I can read text. Please provide the text you want me to read aloud."); // Placeholder response
+              // In this mode (Text Input -> TTS), this action could mean:
+              // 1. Read the content of the text input area.
+              // 2. Read text from clipboard.
+              // Let's assume it reads the current text input for now.
+              setAssistantStatus("Reading Input Text...");
+              speakText(textToSpeak.trim() ? textToSpeak : "There is no text in the input field to read."); // Speak input text
          }
          // Add other predefined actions here
      };
 
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      {/* ScrollView allows the output area to scroll if content overflows */}
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {/* Main container for the screen content */}
-        <View style={styles.container}>
+    <KeyboardAvoidingView
+        style={styles.safeArea}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 70} // Adjust offset
+    >
+        {/* KeyboardAvoidingView to prevent input from being covered */}
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#f0f4f8' }}>
+        {/* ScrollView allows the main content areas to scroll */}
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          {/* Main container for the screen content */}
+          <View style={styles.container}>
 
-          {/* --- Status/Output Area --- */}
-           {/* Displays current status and output text */}
-          <View style={styles.outputArea}>
-             {/* Assistant Status Message */}
-             <Text style={styles.assistantStatusText}>{assistantStatus}</Text>
-             {/* Spoken Output Text Display (Only shown if outputText is not empty) */}
-             {outputText ? (
-                 <Text style={styles.outputText}>{outputText}</Text>
-             ) : null}
-             {/* TODO: Add visual indicators for listening/speaking (e.g., animated icon) */}
+            {/* --- Status/Output Area --- */}
+             {/* Displays current status and text being/has been spoken */}
+            <View style={styles.outputArea}>
+               {/* Assistant Status Message */}
+               <Text style={styles.assistantStatusText}>{assistantStatus}</Text>
+               {/* Spoken Output Text Display (Only shown if outputText is not empty) */}
+               {outputText ? (
+                   <Text style={styles.outputText}>{outputText}</Text>
+               ) : null}
+               {/* TODO: Add visual indicators for speaking */}
+            </View>
+
+            {/* --- Text Input Area --- */}
+             {/* Area where the user types text */}
+            <View style={styles.textInputContainer}>
+                <TextInput
+                    style={styles.textInput}
+                    placeholder="Type text for the assistant to speak..."
+                    placeholderTextColor="#7f8c8d"
+                    value={textToSpeak} // Bind to state
+                    onChangeText={setTextToSpeak} // Update state on change
+                    multiline={true} // Allow multiple lines
+                    keyboardAppearance="default"
+                    returnKeyType="default" // Default return key
+                    blurOnSubmit={false}
+                     accessibilityLabel="Text to speak input"
+                     accessibilityHint="Enter the text you want the assistant to read aloud."
+                />
+            </View>
+
+             {/* --- Speak Button --- */}
+              {/* Button to trigger Text-to-Speech */}
+             <View style={styles.speakButtonContainer}>
+                <TouchableOpacity
+                  style={styles.speakButton}
+                  onPress={handleSpeakButtonPress} // Call handler on press
+                  activeOpacity={0.8}
+                   disabled={!textToSpeak.trim()} // Disable if input is empty
+                   accessibilityLabel="Speak typed text"
+                   accessibilityHint="Makes the assistant read the entered text aloud."
+                >
+                    <Ionicons name="volume-high-outline" size={30} color="#fff" style={{ marginRight: 5 }}/> {/* Speak icon */}
+                    <Text style={styles.speakButtonText}>Speak Text</Text>
+                </TouchableOpacity>
+             </View>
+
+
+            {/* --- Predefined Actions Section --- */}
+             {/* Buttons for common, quick actions (still relevant, will use speakText) */}
+             <View style={styles.actionsContainer}>
+                 {/* Title for the quick actions section */}
+                 <Text style={styles.actionsTitle}>Quick Actions:</Text>
+                 {/* Row container for action buttons */}
+                 <View style={styles.actionButtonsRow}>
+                     {/* Tell Time Button */}
+                     <TouchableOpacity
+                         style={styles.actionButton}
+                         onPress={() => handlePredefinedAction('time')} // Call handler with action type
+                         activeOpacity={0.8}
+                         accessibilityLabel="Tell Current Time"
+                         accessibilityHint="Asks the assistant to tell the current time."
+                     >
+                         <Ionicons name="time-outline" size={30} color="#2c3e50" />
+                         <Text style={styles.actionButtonText}>Time</Text>
+                     </TouchableOpacity>
+
+                     {/* Tell Weather Button */}
+                     <TouchableOpacity
+                         style={styles.actionButton}
+                         onPress={() => handlePredefinedAction('weather')} // Call handler with action type
+                         activeOpacity={0.8}
+                         accessibilityLabel="Get Weather Information"
+                         accessibilityHint="Asks the assistant for the current weather."
+                     >
+                         <Ionicons name="cloud-outline" size={30} color="#2c3e50" />
+                         <Text style={styles.actionButtonText}>Weather</Text>
+                     </TouchableOpacity>
+
+                      {/* Read Input Text Button (repurposed) */}
+                     <TouchableOpacity
+                         style={styles.actionButton}
+                          onPress={() => handlePredefinedAction('read_text')} // Call handler with action type
+                         activeOpacity={0.8}
+                         accessibilityLabel="Read Input Text Aloud"
+                         accessibilityHint="Reads the text in the input field aloud."
+                     >
+                         <Ionicons name="document-text-outline" size={30} color="#2c3e50" />
+                         <Text style={styles.actionButtonText}>Read Input</Text> {/* Updated text */}
+                     </TouchableOpacity>
+                 </View>
+             </View>
+
+
           </View>
-
-          {/* --- Voice Input Button --- */}
-           {/* A large, prominent button to initiate voice interaction */}
-          <View style={styles.micButtonContainer}>
-              <TouchableOpacity
-                style={styles.micButton}
-                onPress={handleMicButtonPress} // Call the handler on press
-                activeOpacity={0.8} // Visual feedback on press
-                 // Accessibility for screen readers
-                 accessibilityLabel="Tap to Speak with Voice Assistant"
-                 accessibilityHint="Activates the microphone for voice input."
-              >
-                  {/* Very Large Microphone Icon */}
-                  <Ionicons name="mic-circle-outline" size={120} color="#fff" />
-                  {/* Text label below the icon */}
-                  <Text style={styles.micButtonText}>Tap to Speak</Text>
-              </TouchableOpacity>
-          </View>
-
-          {/* --- Predefined Actions Section --- */}
-           {/* A section with buttons for common, quick actions */}
-           <View style={styles.actionsContainer}>
-               {/* Title for the quick actions section */}
-               <Text style={styles.actionsTitle}>Quick Actions:</Text>
-               {/* Row container for action buttons to be side-by-side */}
-               <View style={styles.actionButtonsRow}>
-                   {/* Tell Time Button */}
-                   <TouchableOpacity
-                       style={styles.actionButton}
-                       onPress={() => handlePredefinedAction('time')} // Call handler with action type
-                       activeOpacity={0.8}
-                       accessibilityLabel="Tell Current Time"
-                       accessibilityHint="Asks the assistant to tell the current time."
-                   >
-                       <Ionicons name="time-outline" size={30} color="#2c3e50" />
-                       <Text style={styles.actionButtonText}>Time</Text>
-                   </TouchableOpacity>
-
-                   {/* Tell Weather Button */}
-                   <TouchableOpacity
-                       style={styles.actionButton}
-                       onPress={() => handlePredefinedAction('weather')} // Call handler with action type
-                       activeOpacity={0.8}
-                       accessibilityLabel="Get Weather Information"
-                       accessibilityHint="Asks the assistant for the current weather."
-                   >
-                       <Ionicons name="cloud-outline" size={30} color="#2c3e50" />
-                       <Text style={styles.actionButtonText}>Weather</Text>
-                   </TouchableOpacity>
-
-                    {/* Read Text Aloud Button */}
-                   <TouchableOpacity
-                       style={styles.actionButton}
-                        onPress={() => handlePredefinedAction('read_text')} // Call handler with action type
-                       activeOpacity={0.8}
-                       accessibilityLabel="Read Text Aloud"
-                       accessibilityHint="Asks the assistant to read text aloud."
-                   >
-                       <Ionicons name="document-text-outline" size={30} color="#2c3e50" />
-                       <Text style={styles.actionButtonText}>Read Text</Text>
-                   </TouchableOpacity>
-               </View>
-           </View>
-
-
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f0f4f8', // Light background for the safe area
+    backgroundColor: '#f0f4f8', // Light background
   },
   scrollContainer: {
-    flexGrow: 1, // Allows content to grow vertically if needed
-    // paddingBottom: padding, // Add bottom padding if content might touch the bottom edge
+    flexGrow: 1, // Allows content to grow vertically
+    // paddingBottom: padding, // Add bottom padding if needed
   },
   container: {
     flex: 1, // Ensures the container takes up available space below the header
     backgroundColor: '#f0f4f8', // Match safe area background
     padding: padding, // Apply general padding around content
-    alignItems: 'center', // Center main items horizontally (output area, mic button, actions)
+    // alignItems: 'center', // Removed center alignment from main container
   },
   // Status/Output Area Styling
   outputArea: {
-     width: '100%', // Make the output area take full width
+     width: '100%', // Take full width
      flex: 1, // Allow it to take up flexible vertical space
      backgroundColor: '#fff', // White background for the display area
      borderRadius: 10, // Rounded corners
@@ -209,34 +242,52 @@ const styles = StyleSheet.create({
        color: '#555', // Muted color for output text
        lineHeight: 26, // Improved readability with line height
    },
-  // Voice Input Button Styling
-  micButtonContainer: {
-      // This container helps in centering the circular button
-      marginBottom: padding, // Space below the mic button section
+  // Text Input Area Styling
+  textInputContainer: {
+      width: '100%', // Take full width
+      marginBottom: 15, // Space below input
+      backgroundColor: '#fff', // White background for input area
+      borderRadius: 10,
+       elevation: 2,
+       shadowColor: '#000',
+       shadowOffset: { width: 0, height: 1 },
+       shadowOpacity: 0.08,
+       shadowRadius: 2,
+       paddingHorizontal: 15, // Padding inside container
+       paddingVertical: 10,
   },
-  micButton: {
-    width: 160, // Fixed width for a large touchable area
-    height: 160, // Fixed height to make it circular
-    borderRadius: 80, // Half of width/height to make it circular
-    backgroundColor: '#2ecc71', // Bright green color for the microphone button
-    justifyContent: 'center', // Center icon and text vertically
-    alignItems: 'center', // Center icon and text horizontally
-     // Prominent shadow for a main action button
-     elevation: 6,
-     shadowColor: '#2ecc71', // Shadow color matching the button
-     shadowOffset: { width: 0, height: 4 },
-     shadowOpacity: 0.4,
-     shadowRadius: 6,
-     borderWidth: 5, // Add a border
-     borderColor: '#27ae60', // Darker green border
+  textInput: {
+      fontSize: 16,
+      color: '#2c3e50',
+      minHeight: 80, // Make text input area larger for typing
+      textAlignVertical: 'top', // Align text to the top on Android
+       padding: 0, // Remove default text input padding
   },
-  micButtonText: {
+  // Speak Button Styling
+  speakButtonContainer: {
+      width: '100%', // Button container takes full width
+      alignItems: 'center', // Center the button horizontally
+      marginBottom: padding, // Space below the button
+  },
+  speakButton: {
+      flexDirection: 'row', // Arrange icon and text horizontally
+      alignItems: 'center', // Vertically align icon and text
+      backgroundColor: '#3498db', // Blue button color
+      borderRadius: 25, // Pill shape
+      paddingVertical: 12,
+      paddingHorizontal: 30,
+       elevation: 4,
+       shadowColor: '#000',
+       shadowOffset: { width: 0, height: 2 },
+       shadowOpacity: 0.2,
+       shadowRadius: 4,
+  },
+  speakButtonText: {
       color: '#fff', // White text
-      fontSize: 18, // Larger font size for the label
+      fontSize: 18,
       fontWeight: 'bold',
-      marginTop: 5, // Space between the icon and the text label
   },
-   // Predefined Actions Section Styling
+   // Predefined Actions Section Styling (Kept similar, adjusted spacing)
    actionsContainer: {
        width: '100%', // Take full width
        backgroundColor: '#fff', // White background for the actions box
@@ -276,4 +327,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default DumbAssistantScreen; // Component name as requested
+export default DumbAssistantScreen; // Keep component name as requested
