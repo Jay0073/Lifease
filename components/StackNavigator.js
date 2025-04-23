@@ -59,34 +59,18 @@ function StackNavigator({ navigation }) {
         <Stack.Screen
         name="VisualAssistant"
         component={VisualAssistantScreen}
-        options={({ navigation }) => ({
-          title: 'Visual Assistant',
-          headerRight: () => <SettingsHelpHeaderRight navigation={navigation} />,
-        })}
       />
       <Stack.Screen
         name="DumbAssistant"
         component={DumbAssistantScreen}
-        options={({ navigation }) => ({
-          title: 'Voice Assistant',
-          headerRight: () => <SettingsHelpHeaderRight navigation={navigation} />,
-        })}
       />
       <Stack.Screen
         name="DeafAssistant"
         component={DeafAssistantScreen}
-        options={({ navigation }) => ({
-          title: 'Deaf Assistant',
-          headerRight: () => <SettingsHelpHeaderRight navigation={navigation} />,
-        })}
       />
       <Stack.Screen
         name="AIAssistant"
         component={AIAssistantScreen}
-        options={({ navigation }) => ({
-          title: 'AI Assistant',
-          headerRight: () => <SettingsHelpHeaderRight navigation={navigation} />,
-        })}
       />
         {/* Add your other screens as required */}
       </Stack.Navigator>
