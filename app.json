@@ -31,6 +31,16 @@
         "projectId": "de35a233-bdfa-426b-99e1-9674fa9956aa"
       }
     },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow $(Lifease-2) to access your camera",
+          "microphonePermission": "Allow $(Lifease-2) to access your microphone",
+          "recordAudioAndroid": true
+        }
+      ]
+    ],
     "owner": "jay0073"
   }
 }

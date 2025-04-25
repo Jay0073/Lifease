@@ -10,6 +10,7 @@ import VisualAssistantScreen from '../screens/VisualAssistantScreen';
 import DumbAssistantScreen from '../screens/DumbAssistantScreen';
 import DeafAssistantScreen from '../screens/DeafAssistantScreen';
 import AIAssistantScreen from '../screens/AIAssistantScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 // ... other imports as needed
 
 const Stack = createNativeStackNavigator();
@@ -71,6 +72,10 @@ function StackNavigator({ navigation }) {
       <Stack.Screen
         name="AIAssistant"
         component={AIAssistantScreen}
+      />
+      <Stack.Screen
+        name="Profile"
+        component={ProfileScreen}
       />
         {/* Add your other screens as required */}
       </Stack.Navigator>

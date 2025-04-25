@@ -97,7 +97,7 @@ const HomeScreen = ({ navigation }) => {
           <Ionicons name="help-circle-outline" size={24} color="#555" />
           <Text style={styles.footerOptionText}>Help</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.footerOption} onPress={() => console.log('Profile Placeholder Press')}>
+        <TouchableOpacity style={styles.footerOption} onPress={() => navigation.navigate('Profile')}>
           <Ionicons name="person-outline" size={24} color="#555" />
           <Text style={styles.footerOptionText}>Profile</Text>
         </TouchableOpacity>

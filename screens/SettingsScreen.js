@@ -1,60 +1,72 @@
 // screens/SettingsScreen.js
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native'; // Added ScrollView
+import React from "react";
+import { View, Text, StyleSheet, ScrollView } from "react-native"; // Added ScrollView
 
 const SettingsScreen = () => {
+  const [hasPermission, setHasPermission] = useState(null);
+  const [cameraRef, setCameraRef] = useState(null);
+  const [isCameraReady, setIsCameraReady] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const { status } = await Camera.requestCameraPermissionsAsync();
+      setHasPermission(status === "granted");
+    })();
+  }, []);
+
+  const takePicture = async () => {
+    if (cameraRef && isCameraReady) {
+      const photo = await cameraRef.takePictureAsync();
+      console.log("Photo URI:", photo.uri);
+      // You can now use the photo URI as needed
+    }
+  };
+
+  if (hasPermission === null) {
+    return <View />;
+  }
+  if (hasPermission === false) {
+    return <Text>No access to camera</Text>;
+  }
+
   return (
     // Use ScrollView if your settings list might exceed screen height
-    <ScrollView contentContainerStyle={styles.scrollContainer}>
-      <View style={styles.container}>
-        <Text style={styles.title}>Settings Screen</Text>
-
-        {/* Add your settings options here */}
-        {/* Example: */}
-        {/* <View style={styles.settingItem}>
-          <Text style={styles.settingText}>Language</Text>
-          {/* Add a picker or button for language selection */}
-        {/* </View>
-        <View style={styles.settingItem}>
-           <Text style={styles.settingText}>Notifications</Text>
-           {/* Add a toggle switch */}
-        {/* </View> */}
-        {/* Add more settings items as needed */}
-
+    <View style={styles.container}>
+      <Camera
+        style={styles.camera}
+        type={Camera.Constants.Type.back}
+        ref={(ref) => setCameraRef(ref)}
+        onCameraReady={() => setIsCameraReady(true)}
+      />
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity style={styles.button} onPress={takePicture}>
+          <Text style={styles.text}>Take Picture</Text>
+        </TouchableOpacity>
       </View>
-    </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  scrollContainer: {
-    flexGrow: 1,
-  },
   container: {
     flex: 1,
-    alignItems: 'center', // Center horizontally
-    padding: 20,
-    backgroundColor: '#f9f9f9', // Light background
   },
-  title: {
-    fontSize: 28, // Slightly larger title
-    fontWeight: 'bold',
-    marginBottom: 30, // More space below title
-    color: '#333',
+  camera: {
+    flex: 1,
   },
-  // Example styles for future setting items
-  settingItem: {
-    width: '100%', // Take full width
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    flexDirection: 'row', // Optional: for items with toggles/buttons
-    justifyContent: 'space-between', // Optional
-    alignItems: 'center', // Optional
+  buttonContainer: {
+    backgroundColor: "#fff",
+    alignSelf: "center",
+    position: "absolute",
+    bottom: 20,
+    borderRadius: 5,
   },
-  settingText: {
+  button: {
+    padding: 10,
+  },
+  text: {
     fontSize: 18,
-    color: '#555',
+    color: "black",
   },
 });
 
