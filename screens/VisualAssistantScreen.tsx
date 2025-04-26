@@ -17,7 +17,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import speechanimation from "../assets/speechanimation.json";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Audio } from "expo-av";
-// Updated expo-camera imports
 import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
 import * as Speech from "expo-speech";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -156,7 +155,7 @@ const VisualAssistantScreen = ({ navigation }) => {
       const parts = [audioPart];
 
       // Initialize the model
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
       // Create conversational prompt
       const prompt = `
