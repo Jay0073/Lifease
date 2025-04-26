@@ -55,7 +55,7 @@ const HomeScreen = ({ navigation }) => {
               onPress={() => navigation.navigate('DumbAssistant')}
             >
               <Ionicons name="mic-outline" size={40} color="#fff" />
-              <Text style={styles.optionText}>Voice Assistant</Text>
+              <Text style={styles.optionText}>Cognitive Accessibility</Text>
             </TouchableOpacity>
 
             {/* Deaf Assistant Option */}
@@ -64,7 +64,7 @@ const HomeScreen = ({ navigation }) => {
               onPress={() => navigation.navigate('DeafAssistant')}
             >
               <Ionicons name="ear-outline" size={40} color="#fff" />
-              <Text style={styles.optionText}>Deaf Assistant</Text>
+              <Text style={styles.optionText}>Auditory Accessibility</Text>
             </TouchableOpacity>
 
             {/* AI Assistant Option */}
