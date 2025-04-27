@@ -49,13 +49,14 @@ const HomeScreen = ({ navigation }) => {
               <Text style={styles.optionText}>Visual Assistant</Text>
             </TouchableOpacity>
 
+            
             {/* Voice Assistant Option */}
             <TouchableOpacity
               style={styles.optionButton}
               onPress={() => navigation.navigate('DumbAssistant')}
             >
-              <Ionicons name="mic-outline" size={40} color="#fff" />
-              <Text style={styles.optionText}>Cognitive Accessibility</Text>
+              <Ionicons name="volume-high-outline" size={40} color="#fff" />
+              <Text style={styles.optionText}>Voice Accessibility</Text>
             </TouchableOpacity>
 
             {/* Deaf Assistant Option */}
@@ -144,7 +145,7 @@ const styles = StyleSheet.create({
   },
   heroQuote: {
     fontSize: 17,
-    color: '#7f8c8d',
+    color: '#000000',
     textAlign: 'center',
     paddingHorizontal: 20,
     lineHeight: 24,
