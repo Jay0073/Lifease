@@ -15,9 +15,11 @@ import {
   ActivityIndicator,
   Image,
 } from "react-native";
+import speechanimation from "../assets/speechanimation.json";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as DocumentPicker from "expo-document-picker";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import LottieView from "lottie-react-native";
 
 const { height: screenHeight } = Dimensions.get("window");
 
@@ -104,29 +106,49 @@ const AIAssistantScreen = ({ navigation }) => {
 
   const handleSend = async () => {
     if (!inputText.trim() && !selectedFile) return;
+  
     setIsProcessing(true);
     const newUserMessage = {
       id: messages.length + 1,
-      text:
-        inputText.trim() ||
-        (selectedFile ? `Attached file: ${selectedFile.name}` : ""),
+      text: inputText.trim() || "",
       sender: "user",
-      file: selectedFile,
+      file: selectedFile || null,
     };
     setMessages((prevMessages) => [...prevMessages, newUserMessage]);
     setInputText("");
     setSelectedFile(null);
     setTimeout(scrollToBottom, 50);
-
-    const aiResponseText = await callGeminiAPI(inputText, selectedFile);
-
-    const aiResponse = {
-      id: messages.length + 2,
-      text: aiResponseText,
-      sender: "ai",
-    };
-    setMessages((prevMessages) => [...prevMessages, aiResponse]);
-    setTimeout(scrollToBottom, 50);
+  
+    // Add typing indicator
+    const typingMessageId = messages.length + 2;
+    setMessages((prevMessages) => [
+      ...prevMessages,
+      { id: typingMessageId, typing: true, sender: "ai" }, // Add typing flag
+    ]);
+  
+    // Start streaming the AI response
+    const aiResponseChunks = await callGeminiAPI(inputText, selectedFile);
+    setMessages((prevMessages) =>
+      prevMessages.filter((msg) => msg.id !== typingMessageId)
+    );
+  
+    const aiMessageId = messages.length + 3;
+    setMessages((prevMessages) => [
+      ...prevMessages,
+      { id: aiMessageId, text: "", sender: "ai" },
+    ]);
+  
+    for (const chunk of aiResponseChunks) {
+      await new Promise((resolve) => setTimeout(resolve, 100)); // Delay for typing effect
+      setMessages((prevMessages) =>
+        prevMessages.map((msg) =>
+          msg.id === aiMessageId
+            ? { ...msg, text: msg.text + " " + chunk }
+            : msg
+        )
+      );
+      scrollToBottom();
+    }
     setIsProcessing(false);
   };
 
@@ -134,12 +156,12 @@ const AIAssistantScreen = ({ navigation }) => {
     try {
       const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
       const parts = [];
-
+  
       // Add text input if present
       if (inputText.trim()) {
         parts.push({ text: inputText });
       }
-
+  
       // Add file if present
       if (file) {
         const fileResponse = await fetch(file.uri);
@@ -152,7 +174,7 @@ const AIAssistantScreen = ({ navigation }) => {
           reader.onloadend = () => resolve(reader.result.split(",")[1]);
           reader.readAsDataURL(fileBlob);
         });
-
+  
         parts.push({
           inlineData: {
             data: fileBase64,
@@ -160,7 +182,7 @@ const AIAssistantScreen = ({ navigation }) => {
           },
         });
       }
-
+  
       // Construct prompt
       const prompt = `
         You are a helpful AI assistant. Respond to the following input in a simple, clear, and friendly manner.
@@ -169,26 +191,34 @@ const AIAssistantScreen = ({ navigation }) => {
         Input text: "${inputText || "No text provided"}"
       `;
       parts.unshift({ text: prompt });
-
+  
       const result = await model.generateContent(parts);
       const response = result?.response?.text()?.trim();
       console.log("Gemini API Response:", response);
-      return response || "Sorry, I couldn't process your request.";
+  
+      // Return the response as chunks for streaming
+      return response ? response.split(" ") : [];
     } catch (error) {
       console.error("Error calling Gemini API:", error);
-      return "An error occurred while processing your request.";
+      return ["An error occurred while processing your request."];
     }
   };
 
-  const MessageBubble = ({ text, sender, file }) => (
+  const MessageBubble = ({ text, sender, typing }) => (
     <View
       style={[
         styles.messageBubble,
         sender === "user" ? styles.userMessage : styles.aiMessage,
       ]}
     >
-      {/* Always display the text if it exists and is not just the default file attachment message */}
-      {text && !text.startsWith("Attached file:") && (
+      {typing ? (
+        <LottieView
+          source={speechanimation} // Use the imported animation
+          autoPlay
+          loop
+          style={styles.speechanimationmation}
+        />
+      ) : (
         <Text
           style={[
             styles.messageText,
@@ -197,31 +227,6 @@ const AIAssistantScreen = ({ navigation }) => {
         >
           {text}
         </Text>
-      )}
-
-      {/* Display the file (image or document) if present */}
-      {file && (
-        <View style={styles.fileContainer}>
-          {file.type.startsWith("image/") ? (
-            <Image
-              source={{ uri: file.uri }}
-              style={styles.messageImage}
-              resizeMode="cover"
-            />
-          ) : (
-            <View style={styles.documentContainer}>
-              <Ionicons
-                name="document-outline"
-                size={20}
-                color="#3498db"
-                style={styles.documentIcon}
-              />
-              <Text style={styles.fileNameText} numberOfLines={1}>
-                {file.name || "Document Attached"}
-              </Text>
-            </View>
-          )}
-        </View>
       )}
     </View>
   );
@@ -443,6 +448,11 @@ const styles = StyleSheet.create({
   },
   aiMessageText: {
     color: "#2c3e50",
+  },
+  speechanimationmation: {
+    width: 400, // Adjust the width of the GIF
+    height: 800, // Adjust the height of the GIF
+    alignSelf: "center", // Center the GIF horizontally
   },
   fileContainer: {
     marginTop: 8, // Space between text and file
