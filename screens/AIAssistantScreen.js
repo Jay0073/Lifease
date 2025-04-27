@@ -1,4 +1,6 @@
-import React, { useState, useRef } from "react";
+// AIAssistantScreen.js
+
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -15,11 +17,13 @@ import {
   ActivityIndicator,
   Image,
 } from "react-native";
-import speechanimation from "../assets/speechanimation.json";
+import { Vibration } from "react-native";
+import speechanimation from "../assets/typinganimation.json";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as DocumentPicker from "expo-document-picker";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import LottieView from "lottie-react-native";
+import { Audio } from "expo-av";
 
 const { height: screenHeight } = Dimensions.get("window");
 
@@ -39,12 +43,40 @@ const initialMessages = [
 const genAI = new GoogleGenerativeAI("AIzaSyCtju80slt9-z-Otk1mKSnpoKCfR8jQRUw");
 
 const aiFeatures = [
-  { label: "Text", value: "generate_text", icon: "text" },
-  { label: "Image", value: "analyze_image", icon: "image" },
-  { label: "Code", value: "code-slash", icon: "code-slash" },
-  { label: "Translate", value: "language", icon: "language" },
-  { label: "Summary", value: "document-text", icon: "document-text" },
+  {
+    label: "Text",
+    value: "generate_text",
+    icon: "text",
+    prompt: "Generate a creative and concise response to the following input:",
+  },
+  {
+    label: "Image",
+    value: "analyze_image",
+    icon: "image",
+    prompt: "Analyze the following image and provide insights:",
+  },
+  {
+    label: "Code",
+    value: "code-slash",
+    icon: "code-slash",
+    prompt: "Provide coding assistance or debug the following code:",
+  },
+  {
+    label: "Translate",
+    value: "language",
+    icon: "language",
+    prompt: "Translate the following text into the desired language:",
+  },
+  {
+    label: "Summary",
+    value: "document-text",
+    icon: "document-text",
+    prompt: "Summarize the following text in a concise manner:",
+  },
 ];
+
+const generateId = () =>
+  Date.now().toString() + Math.random().toString(36).substr(2, 9);
 
 const AIAssistantScreen = ({ navigation }) => {
   const [messages, setMessages] = useState(initialMessages);
@@ -55,10 +87,48 @@ const AIAssistantScreen = ({ navigation }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const scrollViewRef = useRef(null);
   const dropdownAnim = useRef(new Animated.Value(0)).current;
+  const [recording, setRecording] = useState(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [hasMicrophonePermission, setHasMicrophonePermission] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  let holdTimeout = null; // Timeout for detecting long press
+
+  useEffect(() => {
+    const requestPermissions = async () => {
+      const permission = await Audio.requestPermissionsAsync();
+      setHasMicrophonePermission(permission.status === "granted");
+    };
+    requestPermissions();
+  }, []);
 
   const scrollToBottom = () => {
     if (scrollViewRef.current) {
       scrollViewRef.current.scrollToEnd({ animated: true });
+    }
+  };
+
+  const onPressIn = () => {
+    if (hasMicrophonePermission && !isProcessing) {
+      holdTimeout = setTimeout(() => {
+        startRecording();
+        Vibration.vibrate([50, 80, 50]); // Vibrate when recording starts
+      }, 100); // Start recording only if held for 100ms+
+    }
+  };
+
+  const onPressOut = () => {
+    clearTimeout(holdTimeout); // Cancel if released too soon
+    if (isRecording) {
+      stopRecording();
+    }
+  };
+
+  const stopSpeech = () => {
+    if (isSpeaking) {
+      Speech.stop(); // Stop the ongoing speech
+      Vibration.vibrate([100, 400, 100]); // Trigger a short vibration
+      setIsSpeaking(false); // Reset the speaking state
+      console.log("Speech stopped.");
     }
   };
 
@@ -104,44 +174,103 @@ const AIAssistantScreen = ({ navigation }) => {
     setSelectedFile(null);
   };
 
+  const startRecording = async () => {
+    try {
+      console.log("Requesting permissions...");
+      const permission = await Audio.requestPermissionsAsync();
+  
+      if (permission.status === "granted") {
+        console.log("Checking for existing recording...");
+        if (recording) {
+          console.log("Stopping existing recording...");
+          await recording.stopAndUnloadAsync();
+          setRecording(null);
+        }
+  
+        console.log("Starting new recording...");
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: true,
+          playsInSilentModeIOS: true,
+        });
+  
+        const { recording: newRecording } = await Audio.Recording.createAsync(
+          Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY
+        );
+        setRecording(newRecording);
+        setIsRecording(true);
+        Vibration.vibrate([50, 80, 50]); // Vibrate when recording starts
+        console.log("Recording started");
+      } else {
+        alert("Permission to access microphone is required!");
+      }
+    } catch (err) {
+      console.error("Failed to start recording", err);
+    }
+  };
+
+  const stopRecording = async () => {
+    console.log("Stopping recording...");
+    setIsRecording(false);
+    if (recording) {
+      try {
+        await recording.stopAndUnloadAsync();
+        const uri = recording.getURI();
+        console.log("Recording stopped and stored at", uri);
+        setRecording(null);
+  
+        // Send the audio file to the Gemini API
+        handleAudioInput(uri);
+      } catch (err) {
+        console.error("Failed to stop recording", err);
+      }
+    }
+  };
+
   const handleSend = async () => {
     if (!inputText.trim() && !selectedFile) return;
-  
+
     setIsProcessing(true);
+
+    // ← NEW: generate unique UUIDs for each message
+    const userMessageId = generateId();
+    const typingMessageId = generateId();
+    const aiMessageId = generateId();
+
+    // 1) Add the user's message
     const newUserMessage = {
-      id: messages.length + 1,
+      id: userMessageId,
       text: inputText.trim() || "",
       sender: "user",
       file: selectedFile || null,
     };
-    setMessages((prevMessages) => [...prevMessages, newUserMessage]);
+    setMessages((prev) => [...prev, newUserMessage]);
     setInputText("");
     setSelectedFile(null);
     setTimeout(scrollToBottom, 50);
-  
-    // Add typing indicator
-    const typingMessageId = messages.length + 2;
-    setMessages((prevMessages) => [
-      ...prevMessages,
-      { id: typingMessageId, typing: true, sender: "ai" }, // Add typing flag
+
+    // 2) Show typing indicator
+    setMessages((prev) => [
+      ...prev,
+      { id: typingMessageId, typing: true, sender: "ai" },
     ]);
-  
-    // Start streaming the AI response
+
+    // 3) Call Gemini API
     const aiResponseChunks = await callGeminiAPI(inputText, selectedFile);
-    setMessages((prevMessages) =>
-      prevMessages.filter((msg) => msg.id !== typingMessageId)
-    );
-  
-    const aiMessageId = messages.length + 3;
-    setMessages((prevMessages) => [
-      ...prevMessages,
+
+    // 4) Remove typing indicator
+    setMessages((prev) => prev.filter((msg) => msg.id !== typingMessageId));
+
+    // 5) Add AI message container
+    setMessages((prev) => [
+      ...prev,
       { id: aiMessageId, text: "", sender: "ai" },
     ]);
-  
+
+    // 6) Stream in chunks (typing effect)
     for (const chunk of aiResponseChunks) {
-      await new Promise((resolve) => setTimeout(resolve, 100)); // Delay for typing effect
-      setMessages((prevMessages) =>
-        prevMessages.map((msg) =>
+      await new Promise((r) => setTimeout(r, 100));
+      setMessages((prev) =>
+        prev.map((msg) =>
           msg.id === aiMessageId
             ? { ...msg, text: msg.text + " " + chunk }
             : msg
@@ -149,54 +278,81 @@ const AIAssistantScreen = ({ navigation }) => {
       );
       scrollToBottom();
     }
+
     setIsProcessing(false);
   };
+
+  // this is original
+  // const callGeminiAPI = async (inputText, file) => {
+  //   try {
+  //     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+  //     const parts = [];
+
+  //     if (inputText.trim()) {
+  //       parts.push({ text: inputText });
+  //     }
+
+  //     if (file) {
+  //       const fileResponse = await fetch(file.uri);
+  //       if (!fileResponse.ok)
+  //         throw new Error(`Failed to fetch file: ${fileResponse.statusText}`);
+
+  //       const fileBlob = await fileResponse.blob();
+
+  //       const fileBase64 = await new Promise((resolve, reject) => {
+  //         const reader = new FileReader();
+  //         reader.onerror = reject;
+  //         reader.onloadend = () => resolve(reader.result.split(",")[1]);
+  //         reader.readAsDataURL(fileBlob);
+  //       });
+
+  //       parts.push({
+  //         inlineData: {
+  //           data: fileBase64,
+  //           mimeType: file.type,
+  //         },
+  //       });
+  //     }
+
+  //     const prompt = `You are a helpful AI assistant. Respond in a simple and friendly manner. ${
+  //       selectedFeature.prompt
+  //     } "${inputText || "No input provided"}"`;
+  //     parts.unshift({ text: prompt });
+
+  //     const result = await model.generateContent(parts);
+  //     const response = result?.response?.text()?.trim();
+  //     return response ? response.split(" ") : [];
+  //   } catch (error) {
+  //     console.error("Error calling Gemini API:", error);
+  //     return ["An error occurred while processing your request."];
+  //   }
+  // };
 
   const callGeminiAPI = async (inputText, file) => {
     try {
       const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
       const parts = [];
-  
-      // Add text input if present
+
       if (inputText.trim()) {
         parts.push({ text: inputText });
       }
-  
-      // Add file if present
+
       if (file) {
-        const fileResponse = await fetch(file.uri);
-        if (!fileResponse.ok)
-          throw new Error(`Failed to fetch file: ${fileResponse.statusText}`);
-        const fileBlob = await fileResponse.blob();
-        const fileBase64 = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onerror = reject;
-          reader.onloadend = () => resolve(reader.result.split(",")[1]);
-          reader.readAsDataURL(fileBlob);
-        });
-  
         parts.push({
           inlineData: {
-            data: fileBase64,
+            data: file.data,
             mimeType: file.type,
           },
         });
       }
-  
-      // Construct prompt
-      const prompt = `
-        You are a helpful AI assistant. Respond to the following input in a simple, clear, and friendly manner.
-        - If a file is provided, describe its content (e.g., for images, describe the scene; for documents, extract key text or summarize).
-        - If text is provided, answer the query or follow the instructions, considering the file if present.
-        Input text: "${inputText || "No text provided"}"
-      `;
+
+      const prompt = `You are a helpful AI assistant. Respond in a simple and friendly manner. ${
+        selectedFeature.prompt
+      } "${inputText || "No input provided"}"`;
       parts.unshift({ text: prompt });
-  
+
       const result = await model.generateContent(parts);
       const response = result?.response?.text()?.trim();
-      console.log("Gemini API Response:", response);
-  
-      // Return the response as chunks for streaming
       return response ? response.split(" ") : [];
     } catch (error) {
       console.error("Error calling Gemini API:", error);
@@ -204,7 +360,74 @@ const AIAssistantScreen = ({ navigation }) => {
     }
   };
 
-  const MessageBubble = ({ text, sender, typing }) => (
+  const handleAudioInput = async (audioUri) => {
+    try {
+      const audioResponse = await fetch(audioUri);
+      const audioBlob = await audioResponse.blob();
+      const audioBase64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = reject;
+        reader.onloadend = () => resolve(reader.result.split(",")[1]);
+        reader.readAsDataURL(audioBlob);
+      });
+
+      // Call the Gemini API with a transcription-specific prompt
+      const transcriptionPrompt = `You are a transcriber who can understand the audio provided and transcribe it in the same language. 
+      Do not mention any details about being an AI model. The response should only contain the transcribed text. 
+      If the audio is unclear, try to fill in the context. If it is very unclear, indicate the unaudible parts with [inaudible].
+      Here is the audio:`;
+      const aiResponseChunks = await callGeminiAPI(transcriptionPrompt, {
+        uri: audioUri,
+        type: "audio/mpeg",
+        data: audioBase64,
+      });
+
+      // Combine the chunks into a single transcription
+      const transcribedText = aiResponseChunks.join(" ");
+
+      // Add the transcribed text as a user's message
+      const userMessageId = generateId();
+      setMessages((prev) => [
+        ...prev,
+        { id: userMessageId, text: transcribedText, sender: "user" },
+      ]);
+      setTimeout(scrollToBottom, 50);
+
+      // Call the Gemini API again with the transcribed text for further processing
+      const aiResponseChunksForProcessing = await callGeminiAPI(
+        transcribedText,
+        {
+          uri: audioUri,
+          type: "audio/mpeg",
+          data: audioBase64,
+        }
+      );
+
+      // Process the AI response
+      const aiMessageId = generateId();
+      setMessages((prev) => [
+        ...prev,
+        { id: aiMessageId, text: "", sender: "ai" },
+      ]);
+
+      for (const chunk of aiResponseChunksForProcessing) {
+        await new Promise((r) => setTimeout(r, 100));
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === aiMessageId
+              ? { ...msg, text: msg.text + " " + chunk }
+              : msg
+          )
+        );
+        scrollToBottom();
+      }
+    } catch (error) {
+      console.error("Error processing audio input:", error);
+      alert("Failed to process audio input. Please try again.");
+    }
+  };
+
+  const MessageBubble = ({ text, sender, typing, file }) => (
     <View
       style={[
         styles.messageBubble,
@@ -213,20 +436,42 @@ const AIAssistantScreen = ({ navigation }) => {
     >
       {typing ? (
         <LottieView
-          source={speechanimation} // Use the imported animation
+          source={speechanimation}
           autoPlay
           loop
           style={styles.speechanimationmation}
         />
       ) : (
-        <Text
-          style={[
-            styles.messageText,
-            sender === "user" ? styles.userMessageText : styles.aiMessageText,
-          ]}
-        >
-          {text}
-        </Text>
+        <>
+          <Text
+            style={[
+              styles.messageText,
+              sender === "user" ? styles.userMessageText : styles.aiMessageText,
+            ]}
+          >
+            {text}
+          </Text>
+          {file && (
+            <View style={styles.fileContainer}>
+              {file.type.startsWith("image/") ? (
+                <Image
+                  source={{ uri: file.uri }}
+                  style={styles.messageImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View style={styles.documentContainer}>
+                  <Ionicons
+                    name="document-text-outline"
+                    size={20}
+                    style={styles.documentIcon}
+                  />
+                  <Text style={styles.fileNameText}>{file.name}</Text>
+                </View>
+              )}
+            </View>
+          )}
+        </>
       )}
     </View>
   );
@@ -249,7 +494,6 @@ const AIAssistantScreen = ({ navigation }) => {
   const handleFeatureSelect = (feature) => {
     setSelectedFeature(feature);
     toggleDropdown();
-    console.log(`Feature selected: ${feature.value}`);
   };
 
   return (
@@ -267,12 +511,13 @@ const AIAssistantScreen = ({ navigation }) => {
             ref={scrollViewRef}
             onContentSizeChange={scrollToBottom}
           >
-            {messages.map((message) => (
+            {messages.map((msg) => (
               <MessageBubble
-                key={message.id}
-                text={message.text}
-                sender={message.sender}
-                file={message.file}
+                key={msg.id}
+                text={msg.text}
+                sender={msg.sender}
+                file={msg.file}
+                typing={msg.typing}
               />
             ))}
           </ScrollView>
@@ -316,7 +561,7 @@ const AIAssistantScreen = ({ navigation }) => {
                         {
                           translateY: dropdownAnim.interpolate({
                             inputRange: [0, 1],
-                            outputRange: [-10, 0], // Animate upward
+                            outputRange: [-10, 0],
                           }),
                         },
                         {
@@ -362,7 +607,7 @@ const AIAssistantScreen = ({ navigation }) => {
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.textInput}
-              placeholder="Type a message or attach a file..."
+              placeholder="Type a message..."
               placeholderTextColor="#7f8c8d"
               value={inputText}
               onChangeText={setInputText}
@@ -378,8 +623,12 @@ const AIAssistantScreen = ({ navigation }) => {
                 styles.sendButton,
                 !inputText.trim() && !selectedFile && styles.sendButtonDisabled,
               ]}
-              onPress={handleSend}
-              disabled={(!inputText.trim() && !selectedFile) || isProcessing}
+              onPressIn={!inputText.trim() && !selectedFile ? onPressIn : null} // Start recording on press
+              onPressOut={
+                !inputText.trim() && !selectedFile ? onPressOut : null
+              } // Stop recording on release
+              onPress={inputText.trim() || selectedFile ? handleSend : null} // Send message if input or file exists
+              disabled={isProcessing}
             >
               {isProcessing ? (
                 <ActivityIndicator size="small" color="#fff" />
@@ -387,7 +636,7 @@ const AIAssistantScreen = ({ navigation }) => {
                 <Ionicons
                   name={
                     inputText.trim() || selectedFile ? "send" : "mic-outline"
-                  }
+                  } // Show mic or send icon
                   size={24}
                   color="#fff"
                 />
@@ -450,12 +699,12 @@ const styles = StyleSheet.create({
     color: "#2c3e50",
   },
   speechanimationmation: {
-    width: 400, // Adjust the width of the GIF
-    height: 800, // Adjust the height of the GIF
-    alignSelf: "center", // Center the GIF horizontally
+    width: 150,
+    height: 50,
+    alignSelf: "center",
   },
   fileContainer: {
-    marginTop: 8, // Space between text and file
+    marginTop: 8,
   },
   messageImage: {
     width: 200,
@@ -476,20 +725,20 @@ const styles = StyleSheet.create({
   fileNameText: {
     fontSize: 14,
     color: "#2c3e50",
-    flex: 1, // Allow text to take remaining space
+    flex: 1,
   },
   featurePickerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginVertical: 12,
+    marginVertical: 6,
     zIndex: 100,
   },
   dropdownWrapper: {
     position: "absolute",
-    bottom: "100%", // Position above the dropdown button
+    bottom: "100%",
     left: 0,
     right: 0,
-    zIndex: 1001, // Ensure dropdown is above other elements
+    zIndex: 1001,
   },
   dropdownButton: {
     flex: 1,
@@ -562,7 +811,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 15,
-    paddingVertical: 2,
+    paddingVertical: 5,
     backgroundColor: "#f1f3f5",
     borderRadius: 8,
     marginBottom: 8,
