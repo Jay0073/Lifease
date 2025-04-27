@@ -397,38 +397,34 @@ const DumbAssistantScreen = () => {
             )}
 
             {/* Quick Phrases */}
-            {!compactMode && (
-              <View style={styles.quickPhrasesContainer}>
+              {!compactMode && (
+                <View style={styles.quickPhrasesContainer}>
                 <View style={styles.quickPhrasesRow}>
-                  {['Hello', 'Help Me', 'Thank You', 'Where is Bathroom?'].map((phrase) => (
-                    <TouchableOpacity
-                      key={phrase}
-                      style={styles.quickPhraseButton}
-                      onPress={() => handleQuickPhrase(phrase)}
-                      accessibilityLabel={`Speak ${phrase}`}
-                      accessibilityRole="button"
-                    >
-                      <Ionicons
-                        name={
-                          phrase === 'Hello'
-                            ? 'chatbubble-outline'
-                            : phrase === 'Help Me'
-                            ? 'help-circle-outline'
-                            : phrase === 'Thank You'
-                            ? 'heart-outline'
-                            : 'water-outline'
-                        }
-                        size={24}
-                        color="#2c3e50"
-                      />
-                      <Text style={[styles.quickPhraseText, { fontSize: fontSize - 2 }]}>
-                        {phrase}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                  <TouchableOpacity
+                  style={[styles.quickPhraseButton, { backgroundColor: '#2ecc71' }]}
+                  onPress={handleMicButtonPress}
+                  accessibilityLabel="Start listening"
+                  accessibilityRole="button"
+                  >
+                  <Ionicons name="mic-outline" size={24} color="#fff" />
+                  <Text style={[styles.quickPhraseText, { fontSize: fontSize - 2, color: '#fff' }]}>
+                    Mic
+                  </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                  style={[styles.quickPhraseButton, { backgroundColor: '#e74c3c' }]}
+                  onPress={handleSpeakButtonPress}
+                  accessibilityLabel="Start speaking"
+                  accessibilityRole="button"
+                  >
+                  <Ionicons name="volume-high-outline" size={24} color="#fff" />
+                  <Text style={[styles.quickPhraseText, { fontSize: fontSize - 2, color: '#fff' }]}>
+                    Speaker
+                  </Text>
+                  </TouchableOpacity>
                 </View>
-              </View>
-            )}
+                </View>
+              )}
 
             {/* Predictive Text */}
             {predictiveText && suggestions.length > 0 && (
