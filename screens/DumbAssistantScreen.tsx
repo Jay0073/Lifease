@@ -60,6 +60,7 @@ const predictiveSuggestions = [
   'doctor',
 ];
 
+
 const DumbAssistantScreen = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
