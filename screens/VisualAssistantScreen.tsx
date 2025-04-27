@@ -17,6 +17,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import speechanimation from "../assets/speechanimation.json";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Audio } from "expo-av";
+// Updated expo-camera imports
 import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
 import * as Speech from "expo-speech";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -24,8 +25,7 @@ import LottieView from "lottie-react-native";
 const { height: screenHeight } = Dimensions.get("window");
 const padding = 16;
 
-// Initialize the Google Generative AI client (secure API key in production)
-// IMPORTANT: Replace with a secure method like environment variables in production
+
 const genAI = new GoogleGenerativeAI("AIzaSyCtju80slt9-z-Otk1mKSnpoKCfR8jQRUw"); // Replace with your actual API key
 
 const VisualAssistantScreen = ({ navigation }) => {
@@ -115,91 +115,89 @@ const VisualAssistantScreen = ({ navigation }) => {
 
   const [isSpeaking, setIsSpeaking] = useState(false); // New state for speaking
   const callGeminiAPI = async (audioUri) => {
-    setIsProcessing(true); // Start processing
-    setIsSpeaking(false); // Ensure speaking state is reset
+    setIsProcessing(true);
+    setIsSpeaking(false);
     try {
-      if (!audioUri) {
-        throw new Error("Audio URI is invalid.");
-      }
+      if (!audioUri) throw new Error("Audio URI is invalid.");
 
-      // Fetch audio blob
+      // Fetch audio
       const audioResponse = await fetch(audioUri);
-      if (!audioResponse.ok) {
+      if (!audioResponse.ok)
         throw new Error(`Failed to fetch audio: ${audioResponse.statusText}`);
-      }
       const audioBlob = await audioResponse.blob();
-
-      // Convert audio to base64
       const audioBase64 = await new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onerror = reject;
-        reader.onloadend = () => {
-          if (reader.result) {
-            resolve(reader.result.split(",")[1]);
-          } else {
-            reject(new Error("Failed to read audio data."));
-          }
-        };
+        reader.onloadend = () => resolve(reader.result.split(",")[1]);
         reader.readAsDataURL(audioBlob);
       });
 
-      // Prepare audio part
-      const audioPart = {
-        inlineData: {
-          data: audioBase64,
-          mimeType: "audio/m4a",
+      // Prepare parts
+      const parts = [
+        {
+          inlineData: {
+            data: audioBase64,
+            mimeType: "audio/m4a", // Verify format
+          },
         },
-      };
+      ];
 
-      // Prepare conversation parts
-      const parts = [audioPart];
+      // Add image if available
+      if (capturedImageUri) {
+        const imageResponse = await fetch(capturedImageUri);
+        if (!imageResponse.ok)
+          throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
+        const imageBlob = await imageResponse.blob();
+        const imageBase64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onerror = reject;
+          reader.onloadend = () => resolve(reader.result.split(",")[1]);
+          reader.readAsDataURL(imageBlob);
+        });
+        parts.push({
+          inlineData: {
+            data: imageBase64,
+            mimeType: "image/jpeg", // Adjust dynamically if possible
+          },
+        });
+      }
 
-      // Initialize the model
       const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
-      // Create conversational prompt
       const prompt = `
-        You are a vision assistant for blind users. Respond to audio input briefly.
-        Use simple, clear sentences and maintain a friendly tone.
+        You are a vision assistant for blind users. The audio input contains a question or command, and an image may be provided. Respond briefly and clearly, answering the audio question or describing the image if requested. Use simple sentences and a friendly tone.
       `;
-
-      // Generate content
       const result = await model.generateContent([prompt, ...parts]);
-
-      // Extract the text response
       const response = result?.response;
       const reply = response?.text()?.trim();
+
+      if (!reply) throw new Error("No valid response received from the AI.");
+
+      console.log("Gemini full response:", JSON.stringify(result, null, 2));
       console.log("Gemini says:", reply);
 
-      if (reply) {
-        setIsProcessing(false); // Stop processing
-        setIsSpeaking(true); // Start speaking
-
-        // Speak the response
-        await new Promise((resolve) => {
-          Speech.speak(reply, {
-            onDone: () => {
-              setIsSpeaking(false); // Stop speaking
-              resolve();
-            },
-            onError: (error) => {
-              console.error("Speech error:", error);
-              setIsSpeaking(false); // Stop speaking
-              resolve();
-            },
-          });
+      setIsProcessing(false);
+      setIsSpeaking(true);
+      await new Promise((resolve) => {
+        Speech.speak(reply, {
+          onDone: () => {
+            setIsSpeaking(false);
+            resolve();
+          },
+          onError: (error) => {
+            console.error("Speech error:", error);
+            setIsSpeaking(false);
+            resolve();
+          },
         });
-      } else {
-        throw new Error("No valid response received from the AI.");
-      }
+      });
     } catch (error) {
-      console.error("Error processing audio:", error);
+      console.error("Error processing request:", error);
       Alert.alert(
         "Error",
         error.message || "Something went wrong while processing your request."
       );
     } finally {
-      setIsProcessing(false); // Ensure processing state is reset
+      setIsProcessing(false);
     }
   };
 
@@ -232,36 +230,24 @@ const VisualAssistantScreen = ({ navigation }) => {
       });
 
       console.log("Starting recording..");
-      const { recording } = await Audio.Recording.createAsync(
-        // Consider a more specific preset or custom options if needed
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-        // Example specific options (adjust as needed):
-        // {
-        //    android: {
-        //       extension: '.m4a',
-        //       outputFormat: Audio.AndroidOutputFormat.MPEG_4,
-        //       audioEncoder: Audio.AndroidAudioEncoder.AAC,
-        //       sampleRate: 44100,
-        //       numberOfChannels: 1,
-        //       bitRate: 128000,
-        //    },
-        //    ios: {
-        //       extension: '.m4a', // or .wav, .caf
-        //       outputFormat: Audio.IOSOutputFormat.MPEG4AAC, // Matches .m4a
-        //       audioQuality: Audio.IOSAudioQuality.HIGH,
-        //       sampleRate: 44100,
-        //       numberOfChannels: 1,
-        //       bitRate: 128000,
-        //       linearPCMBitDepth: 16,
-        //       linearPCMIsBigEndian: false,
-        //       linearPCMIsFloat: false,
-        //    },
-        //    web: { // Web recording might need different handling/libraries
-        //      mimeType: 'audio/webm',
-        //      bitsPerSecond: 128000,
-        //    }
-        // }
-      );
+      const { recording } = await Audio.Recording.createAsync({
+        android: {
+          extension: ".m4a",
+          outputFormat: Audio.AndroidOutputFormat.MPEG_4,
+          audioEncoder: Audio.AndroidAudioEncoder.AAC,
+          sampleRate: 44100,
+          numberOfChannels: 1,
+          bitRate: 128000,
+        },
+        ios: {
+          extension: ".m4a",
+          outputFormat: Audio.IOSOutputFormat.MPEG4AAC,
+          audioQuality: Audio.IOSAudioQuality.HIGH,
+          sampleRate: 44100,
+          numberOfChannels: 1,
+          bitRate: 128000,
+        },
+      });
       Vibration.vibrate([50, 80, 50]);
       setRecording(recording);
       setIsRecording(true);
@@ -339,7 +325,7 @@ const VisualAssistantScreen = ({ navigation }) => {
       };
 
       // Initialize the Gemini model
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
       // Create the prompt
       const prompt =
