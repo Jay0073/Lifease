@@ -37,42 +37,35 @@ const TextToSpeechScreen = () => {
       Alert.alert('No Text', 'Please type something to enhance.');
       return;
     }
-  
+
     try {
       setLoading(true);
-  
+
       const model = genAI.getGenerativeModel({
         model: "gemini-2.0-flash", // Updated model name
         generationConfig: {
           temperature: 0.2,
-          topK: 1,
+          topK: 1, // Ensures only the highest probability option is considered
           topP: 1,
           maxOutputTokens: 400,
         }
       });
-  
-      const prompt = `You are a speech writer and communication expert. 
-  Rewrite the following text to make it sound clear, natural, and easy to speak out loud.
-  Focus on making it simple, smooth, and understandable for listeners, without changing the original meaning.
-  Avoid complicated words and long sentences. 
-  Speak as if explaining to someone hearing it for the first time.
-  
-  Here is the text:
-  
-  "${text.trim()}"`;
-  
+
+      const prompt = `You are a professional speech writer. 
+Rewrite the following text to make it sound clear, natural, and easy to say aloud. 
+Do not provide any explanations, options, or extra comments. 
+Just return the improved version of the text as a single output.
+
+Here is the text:
+
+"${text.trim()}"`;
+
       const result = await model.generateContent(prompt);
       const response = await result.response;
-      let enhancedText = await response.text();
-  
-      // ✨ New logic to remove unwanted intro text
-      const firstNewlineIndex = enhancedText.indexOf('\n');
-      if (firstNewlineIndex !== -1) {
-        enhancedText = enhancedText.slice(firstNewlineIndex + 1); // take text after first newline
-      }
-  
+      const enhancedText = await response.text();
+
       setText(enhancedText.trim());
-      Alert.alert('Success', 'Text has been enhanced!');
+      Alert.alert('Success', 'Your text has been enhanced in a friendly tone!');
     } catch (error) {
       console.error(error);
       Alert.alert('Error', 'Failed to enhance text.');
