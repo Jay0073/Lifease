@@ -226,61 +226,6 @@ const AIAssistantScreen = ({ navigation }) => {
     }
   };
 
-  const handleSend = async () => {
-    if (!inputText.trim() && !selectedFile) return;
-
-    setIsProcessing(true);
-
-    // ← NEW: generate unique UUIDs for each message
-    const userMessageId = generateId();
-    const typingMessageId = generateId();
-    const aiMessageId = generateId();
-
-    // 1) Add the user's message
-    const newUserMessage = {
-      id: userMessageId,
-      text: inputText.trim() || "",
-      sender: "user",
-      file: selectedFile || null,
-    };
-    setMessages((prev) => [...prev, newUserMessage]);
-    setInputText("");
-    setSelectedFile(null);
-    setTimeout(scrollToBottom, 50);
-
-    // 2) Show typing indicator
-    setMessages((prev) => [
-      ...prev,
-      { id: typingMessageId, typing: true, sender: "ai" },
-    ]);
-
-    // 3) Call Gemini API
-    const aiResponseChunks = await callGeminiAPI(inputText, selectedFile);
-
-    // 4) Remove typing indicator
-    setMessages((prev) => prev.filter((msg) => msg.id !== typingMessageId));
-
-    // 5) Add AI message container
-    setMessages((prev) => [
-      ...prev,
-      { id: aiMessageId, text: "", sender: "ai" },
-    ]);
-
-    // 6) Stream in chunks (typing effect)
-    for (const chunk of aiResponseChunks) {
-      await new Promise((r) => setTimeout(r, 100));
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === aiMessageId
-            ? { ...msg, text: msg.text + " " + chunk }
-            : msg
-        )
-      );
-      scrollToBottom();
-    }
-
-    setIsProcessing(false);
-  };
 
   // this is original
   // const callGeminiAPI = async (inputText, file) => {
@@ -332,25 +277,45 @@ const AIAssistantScreen = ({ navigation }) => {
     try {
       const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
       const parts = [];
-
-      if (inputText.trim()) {
-        parts.push({ text: inputText });
-      }
-
+  
+      // Include the last 5 messages in the prompt for context
+      const conversationHistory = messages
+        .slice(-5) // Limit to the last 5 messages
+        .map((msg) => `${msg.sender === "user" ? "User" : "AI"}: ${msg.text}`)
+        .join("\n");
+  
+      // Add the conversation history to the prompt
+      const prompt = `
+        You are a helpful AI assistant. Respond in a simple and friendly manner.
+        Here is the conversation so far:
+        ${conversationHistory}
+        User: ${inputText || "No input provided"}
+      `;
+  
+      parts.push({ text: prompt });
+  
       if (file) {
+        const fileResponse = await fetch(file.uri);
+        if (!fileResponse.ok) {
+          throw new Error(`Failed to fetch file: ${fileResponse.statusText}`);
+        }
+  
+        const fileBlob = await fileResponse.blob();
+        const fileBase64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onerror = reject;
+          reader.onloadend = () => resolve(reader.result.split(",")[1]);
+          reader.readAsDataURL(fileBlob);
+        });
+  
         parts.push({
           inlineData: {
-            data: file.data,
-            mimeType: file.type,
+            data: fileBase64,
+            mimeType: file.type, // Ensure the MIME type is correct
           },
         });
       }
-
-      const prompt = `You are a helpful AI assistant. Respond in a simple and friendly manner. ${
-        selectedFeature.prompt
-      } "${inputText || "No input provided"}"`;
-      parts.unshift({ text: prompt });
-
+  
       const result = await model.generateContent(parts);
       const response = result?.response?.text()?.trim();
       return response ? response.split(" ") : [];
@@ -358,6 +323,61 @@ const AIAssistantScreen = ({ navigation }) => {
       console.error("Error calling Gemini API:", error);
       return ["An error occurred while processing your request."];
     }
+  };
+
+  const handleSend = async () => {
+    if (!inputText.trim() && !selectedFile) return;
+  
+    setIsProcessing(true);
+  
+    const userMessageId = generateId();
+    const typingMessageId = generateId();
+    const aiMessageId = generateId();
+  
+    // Add the user's message
+    const newUserMessage = {
+      id: userMessageId,
+      text: inputText.trim() || "",
+      sender: "user",
+      file: selectedFile || null,
+    };
+    setMessages((prev) => [...prev, newUserMessage]);
+    setInputText("");
+    setSelectedFile(null);
+    setTimeout(scrollToBottom, 50);
+  
+    // Show typing indicator
+    setMessages((prev) => [
+      ...prev,
+      { id: typingMessageId, typing: true, sender: "ai" },
+    ]);
+  
+    // Call Gemini API
+    const aiResponseChunks = await callGeminiAPI(inputText, selectedFile);
+  
+    // Remove typing indicator
+    setMessages((prev) => prev.filter((msg) => msg.id !== typingMessageId));
+  
+    // Add AI message container
+    setMessages((prev) => [
+      ...prev,
+      { id: aiMessageId, text: "", sender: "ai" },
+    ]);
+  
+    // Stream in chunks (typing effect)
+    for (const chunk of aiResponseChunks) {
+      await new Promise((r) => setTimeout(r, 100));
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === aiMessageId
+            ? { ...msg, text: msg.text + " " + chunk }
+            : msg
+        )
+      );
+      scrollToBottom();
+    }
+  
+    setIsProcessing(false);
   };
 
   const handleAudioInput = async (audioUri) => {
