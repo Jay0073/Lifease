@@ -226,53 +226,6 @@ const AIAssistantScreen = ({ navigation }) => {
     }
   };
 
-
-  // this is original
-  // const callGeminiAPI = async (inputText, file) => {
-  //   try {
-  //     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-  //     const parts = [];
-
-  //     if (inputText.trim()) {
-  //       parts.push({ text: inputText });
-  //     }
-
-  //     if (file) {
-  //       const fileResponse = await fetch(file.uri);
-  //       if (!fileResponse.ok)
-  //         throw new Error(`Failed to fetch file: ${fileResponse.statusText}`);
-
-  //       const fileBlob = await fileResponse.blob();
-
-  //       const fileBase64 = await new Promise((resolve, reject) => {
-  //         const reader = new FileReader();
-  //         reader.onerror = reject;
-  //         reader.onloadend = () => resolve(reader.result.split(",")[1]);
-  //         reader.readAsDataURL(fileBlob);
-  //       });
-
-  //       parts.push({
-  //         inlineData: {
-  //           data: fileBase64,
-  //           mimeType: file.type,
-  //         },
-  //       });
-  //     }
-
-  //     const prompt = `You are a helpful AI assistant. Respond in a simple and friendly manner. ${
-  //       selectedFeature.prompt
-  //     } "${inputText || "No input provided"}"`;
-  //     parts.unshift({ text: prompt });
-
-  //     const result = await model.generateContent(parts);
-  //     const response = result?.response?.text()?.trim();
-  //     return response ? response.split(" ") : [];
-  //   } catch (error) {
-  //     console.error("Error calling Gemini API:", error);
-  //     return ["An error occurred while processing your request."];
-  //   }
-  // };
-
   const callGeminiAPI = async (inputText, file) => {
     try {
       const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
