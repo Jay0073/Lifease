@@ -119,7 +119,7 @@ const VisualAssistantScreen = ({ navigation }) => {
     setIsSpeaking(false);
     try {
       if (!audioUri) throw new Error("Audio URI is invalid.");
-
+  
       // Fetch audio
       const audioResponse = await fetch(audioUri);
       if (!audioResponse.ok)
@@ -131,9 +131,24 @@ const VisualAssistantScreen = ({ navigation }) => {
         reader.onloadend = () => resolve(reader.result.split(",")[1]);
         reader.readAsDataURL(audioBlob);
       });
-
+  
+      // Include the last 5 messages in the prompt for context
+      const conversationContext = conversationHistory
+        .slice(-5) // Limit to the last 5 messages
+        .map((msg) => `${msg.sender === "user" ? "User" : "AI"}: ${msg.text}`)
+        .join("\n");
+  
+      // Prepare the prompt
+      const prompt = `
+        You are a vision assistant for blind users. The audio input contains a question or command, and an image may be provided. Respond briefly and clearly, answering the audio question or describing the image if requested. Use simple sentences and a friendly tone.
+        Here is the conversation so far:
+        ${conversationContext}
+        User: Please process the following audio input.
+      `;
+  
       // Prepare parts
       const parts = [
+        { text: prompt },
         {
           inlineData: {
             data: audioBase64,
@@ -141,7 +156,7 @@ const VisualAssistantScreen = ({ navigation }) => {
           },
         },
       ];
-
+  
       // Add image if available
       if (capturedImageUri) {
         const imageResponse = await fetch(capturedImageUri);
@@ -161,20 +176,23 @@ const VisualAssistantScreen = ({ navigation }) => {
           },
         });
       }
-
+  
       const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-      const prompt = `
-        You are a vision assistant for blind users. The audio input contains a question or command, and an image may be provided. Respond briefly and clearly, answering the audio question or describing the image if requested. Use simple sentences and a friendly tone.
-      `;
-      const result = await model.generateContent([prompt, ...parts]);
+      const result = await model.generateContent(parts);
       const response = result?.response;
       const reply = response?.text()?.trim();
-
+  
       if (!reply) throw new Error("No valid response received from the AI.");
-
+  
       console.log("Gemini full response:", JSON.stringify(result, null, 2));
       console.log("Gemini says:", reply);
-
+  
+      // Add the AI's response to the conversation history
+      setConversationHistory((prev) => [
+        ...prev,
+        { sender: "ai", text: reply },
+      ]);
+  
       setIsProcessing(false);
       setIsSpeaking(true);
       await new Promise((resolve) => {
@@ -260,13 +278,12 @@ const VisualAssistantScreen = ({ navigation }) => {
 
   const stopRecording = async () => {
     if (!recording) {
-      // This can happen if onPressOut triggers before recording starts or after stop
       console.log("Stop recording called but no recording object exists.");
       return;
     }
     console.log("Stopping recording..");
-    setIsRecording(false); // Set state first
-
+    setIsRecording(false);
+  
     try {
       await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
@@ -274,16 +291,20 @@ const VisualAssistantScreen = ({ navigation }) => {
       if (!uri) {
         throw new Error("Recording URI is invalid after stopping.");
       }
-      // Reset recording state *before* calling API
       setRecording(null);
+  
+      // Add the user's audio input to the conversation history
+      setConversationHistory((prev) => [
+        ...prev,
+        { sender: "user", text: "Audio input provided." },
+      ]);
+  
       await callGeminiAPI(uri);
     } catch (err) {
       console.error("Failed to stop or process recording:", err);
       Alert.alert("Error", "Failed to process recording. Please try again.");
-      // Ensure recording state is reset even on error
       setRecording(null);
     }
-    // No finally block needed as setRecording(null) is handled in try/catch
   };
 
   const handleReadTextFromImage = async () => {
