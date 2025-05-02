@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,98 +7,135 @@ import {
   ScrollView,
   Dimensions,
   SafeAreaView,
-  ImageBackground, // Import ImageBackground for the background image
+  ImageBackground,
 } from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons'; // Import Ionicons for icons
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 const { width } = Dimensions.get('window');
 const padding = 15;
 const gap = 15;
 const optionSize = (width - padding * 2 - gap) / 2;
 
-const HomeScreen = ({ navigation }) => {
+const HomeScreen = ({ navigation, route }) => {
+  const [userDetails, setUserDetails] = useState({});
+
+  useEffect(() => {
+    const loadData = async () => {
+      const stored = await AsyncStorage.getItem('userDetails');
+      const parsed = stored ? JSON.parse(stored) : route.params?.userDetails || {};
+      setUserDetails(parsed);
+    };
+    loadData();
+  }, [route.params]);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.container}>
-
-          {/* --- Hero Section --- */}
+          {/* Hero Section */}
           <View style={styles.heroContainerWrapper}>
             <ImageBackground
-              source={require('../assets/geometrics_background.jpg')} // Path to the background image
+              source={require('../assets/geometrics_background.jpeg')}
               style={styles.heroBackground}
-              imageStyle={{ borderRadius: 15 }} // Ensure the image respects the border radius
+              imageStyle={{ borderRadius: 15 }}
             >
               <View style={styles.heroContainer}>
-                <Text style={styles.heroTitle}>LifeEasy</Text>
+                <Text style={styles.heroTitle}>
+                  Welcome, {userDetails.name || 'User'}
+                </Text>
                 <Text style={styles.heroQuote}>
                   Empowering independence through intuitive assistance.
                 </Text>
+                {userDetails.disability && (
+                  <Text style={styles.heroSubtitle}>
+                    Tailored for {userDetails.disability}
+                  </Text>
+                )}
               </View>
             </ImageBackground>
           </View>
 
-          {/* --- Options Section (Modern Cards) --- */}
+          {/* Options Section */}
           <View style={styles.optionsContainer}>
-            {/* Visual Assistant Option */}
             <TouchableOpacity
               style={styles.optionButton}
               onPress={() => navigation.navigate('VisualAssistant')}
+              accessibilityLabel="Blind Assistant button"
+              accessibilityHint="Tap to access visual assistance features"
             >
               <Ionicons name="eye-outline" size={40} color="#fff" />
-              <Text style={styles.optionText}>Visual Assistant</Text>
+              <Text style={styles.optionText}>Blind Assistant</Text>
             </TouchableOpacity>
-
-            
-            {/* Voice Assistant Option */}
             <TouchableOpacity
               style={styles.optionButton}
               onPress={() => navigation.navigate('DumbAssistant')}
+              accessibilityLabel="Dumb Assistant button"
+              accessibilityHint="Tap to access voice accessibility features"
             >
               <Ionicons name="volume-high-outline" size={40} color="#fff" />
-              <Text style={styles.optionText}>Voice Accessibility</Text>
+              <Text style={styles.optionText}>Dumb Assistant</Text>
             </TouchableOpacity>
-
-            {/* Deaf Assistant Option */}
             <TouchableOpacity
               style={styles.optionButton}
               onPress={() => navigation.navigate('DeafAssistant')}
+              accessibilityLabel="Deaf Assistant button"
+              accessibilityHint="Tap to access auditory accessibility features"
             >
               <Ionicons name="ear-outline" size={40} color="#fff" />
-              <Text style={styles.optionText}>Auditory Accessibility</Text>
+              <Text style={styles.optionText}>Deaf Assistant</Text>
             </TouchableOpacity>
-
-            {/* AI Assistant Option */}
             <TouchableOpacity
               style={styles.optionButton}
               onPress={() => navigation.navigate('AIAssistant')}
+              accessibilityLabel="AI Assistant button"
+              accessibilityHint="Tap to access AI-powered assistance"
             >
               <Ionicons name="sparkles-outline" size={40} color="#fff" />
               <Text style={styles.optionText}>AI Assistant</Text>
             </TouchableOpacity>
           </View>
 
-          {/* --- Placeholder Footer --- */}
+          {/* Placeholder Footer */}
           <View style={styles.placeholderFooter}></View>
-
         </View>
       </ScrollView>
 
-      {/* --- Visual Footer Bar (Placeholder) --- */}
+      {/* Visual Footer Bar */}
       <View style={styles.visualFooterBar}>
-        <TouchableOpacity style={styles.footerOption} onPress={() => console.log('Home Placeholder Press')}>
+        <TouchableOpacity
+          style={styles.footerOption}
+          onPress={() => navigation.navigate('HomeScreen')}
+          accessibilityLabel="Home button"
+          accessibilityHint="Tap to return to the home screen"
+        >
           <Ionicons name="home" size={24} color="#007AFF" />
           <Text style={styles.footerOptionText}>Home</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.footerOption} onPress={() => console.log('History Placeholder Press')}>
+        <TouchableOpacity
+          style={styles.footerOption}
+          onPress={() => navigation.navigate('History')}
+          accessibilityLabel="History button"
+          accessibilityHint="Tap to view your activity history"
+        >
           <Ionicons name="time-outline" size={24} color="#555" />
           <Text style={styles.footerOptionText}>History</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.footerOption} onPress={() => console.log('Help Placeholder Press')}>
+        <TouchableOpacity
+          style={styles.footerOption}
+          onPress={() => navigation.navigate('Help')}
+          accessibilityLabel="Help button"
+          accessibilityHint="Tap to access help resources"
+        >
           <Ionicons name="help-circle-outline" size={24} color="#555" />
           <Text style={styles.footerOptionText}>Help</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.footerOption} onPress={() => navigation.navigate('Profile')}>
+        <TouchableOpacity
+          style={styles.footerOption}
+          onPress={() => navigation.navigate('Profile')}
+          accessibilityLabel="Profile button"
+          accessibilityHint="Tap to view your profile"
+        >
           <Ionicons name="person-outline" size={24} color="#555" />
           <Text style={styles.footerOptionText}>Profile</Text>
         </TouchableOpacity>
@@ -114,7 +151,7 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingBottom: 80, // Ensure space for the fixed footer
+    paddingBottom: 80,
   },
   container: {
     flex: 1,
@@ -126,16 +163,20 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: '#ffffff',
     borderRadius: 15,
-    elevation: 5, // Add elevation for shadow
+    elevation: 5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 5,
     marginVertical: 20,
   },
+  heroBackground: {
+    width: '100%',
+    borderRadius: 15,
+  },
   heroContainer: {
     alignItems: 'center',
-    paddingVertical: 60, // Increased height
+    paddingVertical: 60,
   },
   heroTitle: {
     fontSize: 36,
@@ -149,6 +190,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: 20,
     lineHeight: 24,
+  },
+  heroSubtitle: {
+    fontSize: 16,
+    color: '#007AFF',
+    marginTop: 8,
   },
   optionsContainer: {
     width: '100%',

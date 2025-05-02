@@ -1,72 +1,120 @@
-// screens/SettingsScreen.js
-import React from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native"; // Added ScrollView
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Haptics from 'expo-haptics';
 
 const SettingsScreen = () => {
-  const [hasPermission, setHasPermission] = useState(null);
-  const [cameraRef, setCameraRef] = useState(null);
-  const [isCameraReady, setIsCameraReady] = useState(false);
+  const [largeText, setLargeText] = React.useState(false);
+  const [highContrast, setHighContrast] = React.useState(false);
 
-  useEffect(() => {
-    (async () => {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === "granted");
-    })();
-  }, []);
-
-  const takePicture = async () => {
-    if (cameraRef && isCameraReady) {
-      const photo = await cameraRef.takePictureAsync();
-      console.log("Photo URI:", photo.uri);
-      // You can now use the photo URI as needed
-    }
+  const toggleLargeText = () => {
+    Haptics.selectionAsync();
+    setLargeText(!largeText);
+    // TODO: Implement large text logic
   };
 
-  if (hasPermission === null) {
-    return <View />;
-  }
-  if (hasPermission === false) {
-    return <Text>No access to camera</Text>;
-  }
+  const toggleHighContrast = () => {
+    Haptics.selectionAsync();
+    setHighContrast(!highContrast);
+    // TODO: Implement high contrast logic
+  };
+
+  const SettingsOption = ({
+    iconName,
+    label,
+    value,
+    onToggle,
+    accessibilityLabel,
+    accessibilityHint,
+  }) => (
+    <View style={styles.optionButton}>
+      <Ionicons name={iconName} size={24} color="#3498db" style={styles.optionIcon} />
+      <Text style={styles.optionText}>{label}</Text>
+      <Switch
+        value={value}
+        onValueChange={onToggle}
+        trackColor={{ false: '#767577', true: '#81b0ff' }}
+        thumbColor={value ? '#3498db' : '#f4f3f4'}
+        accessibilityLabel={accessibilityLabel}
+        accessibilityHint={accessibilityHint}
+      />
+    </View>
+  );
 
   return (
-    // Use ScrollView if your settings list might exceed screen height
-    <View style={styles.container}>
-      <Camera
-        style={styles.camera}
-        type={Camera.Constants.Type.back}
-        ref={(ref) => setCameraRef(ref)}
-        onCameraReady={() => setIsCameraReady(true)}
-      />
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.button} onPress={takePicture}>
-          <Text style={styles.text}>Take Picture</Text>
-        </TouchableOpacity>
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContainer}>
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Accessibility Settings</Text>
+        <SettingsOption
+          iconName="text-outline"
+          label="Large Text"
+          value={largeText}
+          onToggle={toggleLargeText}
+          accessibilityLabel="Toggle Large Text"
+          accessibilityHint="Enables or disables larger font sizes throughout the app"
+        />
+        <View style={styles.separator} />
+        <SettingsOption
+          iconName="contrast-outline"
+          label="High Contrast"
+          value={highContrast}
+          onToggle={toggleHighContrast}
+          accessibilityLabel="Toggle High Contrast"
+          accessibilityHint="Enables or disables high contrast mode for better visibility"
+        />
       </View>
-    </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#f0f4f8',
   },
-  camera: {
-    flex: 1,
+  scrollContainer: {
+    padding: 20,
   },
-  buttonContainer: {
-    backgroundColor: "#fff",
-    alignSelf: "center",
-    position: "absolute",
-    bottom: 20,
-    borderRadius: 5,
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    marginBottom: 20,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    overflow: 'hidden',
   },
-  button: {
-    padding: 10,
-  },
-  text: {
+  cardTitle: {
     fontSize: 18,
-    color: "black",
+    fontWeight: 'bold',
+    color: '#34495e',
+    paddingHorizontal: 20,
+    paddingTop: 15,
+    paddingBottom: 10,
+  },
+  optionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    backgroundColor: '#fff',
+    minHeight: 48,
+  },
+  optionIcon: {
+    marginRight: 15,
+  },
+  optionText: {
+    flex: 1,
+    fontSize: 18,
+    color: '#34495e',
+  },
+  separator: {
+    height: 1,
+    backgroundColor: '#cfd8dc',
+    marginLeft: 20,
+    marginRight: 20,
   },
 });
 
