@@ -1,33 +1,47 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, FlatList, Platform } from 'react-native';
 import * as Speech from 'expo-speech';
 import * as ImagePicker from 'expo-image-picker';
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import * as Haptics from 'expo-haptics';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { MaterialIcons, FontAwesome5, Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import { Platform } from 'react-native';
 
-const API_KEY = "AIzaSyCtju80slt9-z-Otk1mKSnpoKCfR8jQRUw";
+const API_KEY = 'AIzaSyCtju80slt9-z-Otk1mKSnpoKCfR8jQRUw';
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 const TextToSpeechScreen = () => {
   const [text, setText] = useState('');
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [speechRate, setSpeechRate] = useState(1.0);
+  const [history, setHistory] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('Greetings');
 
-  const speakText = () => {
+  const quickPhrases = {
+    Greetings: ['Hello', 'Good morning', 'How are you?', 'Goodbye'],
+    Needs: ['I need help', 'Water please', 'Bathroom', 'Food'],
+    Emotions: ['I am happy', 'I am sad', 'I am tired', 'I am okay'],
+  };
+
+  const speakText = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     if (isSpeaking) {
       Speech.stop();
       setIsSpeaking(false);
     } else {
       if (text.trim() !== '') {
         Speech.speak(text, {
+          rate: speechRate,
           onDone: () => setIsSpeaking(false),
           onStopped: () => setIsSpeaking(false),
           onError: () => setIsSpeaking(false),
         });
         setIsSpeaking(true);
+        if (!history.includes(text)) {
+          setHistory([text, ...history.slice(0, 4)]);
+        }
       } else {
         Alert.alert('No Text', 'Please enter text to speak.');
       }
@@ -43,31 +57,48 @@ const TextToSpeechScreen = () => {
     try {
       setLoading(true);
       const model = genAI.getGenerativeModel({
-        model: "gemini-2.0-flash",
-        generationConfig: {
-          temperature: 0.2,
-          topK: 1,
-          topP: 1,
-          maxOutputTokens: 400,
-        }
+        model: 'gemini-2.0-flash',
+        generationConfig: { temperature: 0.2, topK: 1, topP: 1, maxOutputTokens: 400 },
       });
 
-      const prompt = `You are a professional speech writer. 
-Rewrite the following text to make it clear, concise, and professional for speech delivery. 
-Return only the improved text without explanations.
-
-Text: "${text.trim()}"`;
+      const prompt = `You are a professional speech writer. Rewrite the following text to make it clear, concise, and professional for speech delivery. Return only the improved text without explanations. Text: "${text.trim()}"`;
 
       const result = await model.generateContent(prompt);
       const response = await result.response;
       const enhancedText = await response.text();
 
       setText(enhancedText.trim());
-      // Alert.alert('Success', 'Text enhanced successfully.');
       console.log('Enhanced Text:', enhancedText.trim());
     } catch (error) {
       console.error(error);
       Alert.alert('Error', 'Failed to enhance text.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const processImage = async (image) => {
+    try {
+      setLoading(true);
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+
+      const prompt = `Extract text from the provided image and return it as plain text. If no text is found, return "No text detected."`;
+      const imageData = {
+        inlineData: {
+          data: image.base64,
+          mimeType: 'image/jpeg',
+        },
+      };
+
+      const result = await model.generateContent([prompt, imageData]);
+      const response = await result.response;
+      const extractedText = await response.text();
+
+      setText(extractedText.trim());
+      console.log('Extracted Text:', extractedText.trim());
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Error', 'Failed to process image.');
     } finally {
       setLoading(false);
     }
@@ -80,7 +111,20 @@ Text: "${text.trim()}"`;
       return;
     }
 
-    await ImagePicker.launchCameraAsync();
+    const result = await ImagePicker.launchCameraAsync({
+      base64: true,
+      quality: 0.5,
+    });
+
+    if (!result.canceled && result.assets) {
+      await processImage(result.assets[0]);
+    }
+  };
+
+  const adjustSpeechRate = (increment) => {
+    const newRate = Math.min(Math.max(speechRate + increment, 0.5), 2.0);
+    setSpeechRate(newRate);
+    Haptics.selectionAsync();
   };
 
   return (
@@ -94,65 +138,67 @@ Text: "${text.trim()}"`;
           onChangeText={setText}
           multiline
         />
-        <TouchableOpacity
-          style={styles.clearButtonOverlay}
-          onPress={() => setText('')}
-        >
+        <TouchableOpacity style={styles.clearButtonOverlay} onPress={() => setText('')}>
           <FontAwesome5 name="trash" size={20} color="#666" />
         </TouchableOpacity>
       </BlurView>
 
+      <View style={styles.historyContainer}>
+        <Text style={styles.historyTitle}>Recent Phrases</Text>
+        <FlatList
+          data={history}
+          horizontal
+          keyExtractor={(item, index) => index.toString()}
+          renderItem={({ item }) => (
+            <TouchableOpacity style={styles.historyChip} onPress={() => setText(item)}>
+              <Text style={styles.historyText}>{item.length > 20 ? item.slice(0, 20) + '...' : item}</Text>
+            </TouchableOpacity>
+          )}
+        />
+      </View>
+
       <View style={styles.quickTextContainer}>
-        {['Hello', 'Good morning', 'How are you?', 'good', 'Thank you'].map((item, index) => (
-          <TouchableOpacity
-            key={index}
-            style={styles.quickTextChip}
-            onPress={() => setText(item)}
-          >
-            <Text style={styles.quickText}>{item}</Text>
-          </TouchableOpacity>
-        ))}
+        <View style={styles.categorySelector}>
+          {Object.keys(quickPhrases).map((category) => (
+            <TouchableOpacity
+              key={category}
+              style={[styles.categoryChip, selectedCategory === category && styles.selectedCategoryChip]}
+              onPress={() => setSelectedCategory(category)}
+            >
+              <Text style={styles.categoryText}>{category}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <View style={styles.phraseContainer}>
+          {quickPhrases[selectedCategory].map((item, index) => (
+            <TouchableOpacity key={index} style={styles.quickTextChip} onPress={() => setText(item)}>
+              <Text style={styles.quickText}>{item}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
       {loading ? (
         <ActivityIndicator size="large" color="#007AFF" style={styles.loader} />
       ) : (
         <View style={styles.bottomControl}>
+          
           <TouchableOpacity style={styles.sideButton} onPress={enhanceText}>
-            <LinearGradient
-              colors={['#FF6F61', '#FF9A76']}
-              style={styles.buttonGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              <Feather name="edit-2" size={20} color="#FFFF" />
-              {/* <Text style={styles.sideButtonText}>Enhance</Text> */}
+            <LinearGradient colors={['#FF6F61', '#FF9A76']} style={styles.buttonGradient}>
+              <Feather name="edit-2" size={20} color="#FFF" />
             </LinearGradient>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.speakButton}
-            onPress={speakText}
-          >
+          <TouchableOpacity style={styles.speakButton} onPress={speakText}>
             <LinearGradient
               colors={isSpeaking ? ['#FF5252', '#FF8A80'] : ['#00DDEB', '#6B73FF']}
               style={styles.speakButtonGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
             >
-              <FontAwesome5 name={isSpeaking ? 'stop' : 'volume-up'} size={40} color="#FFF" />
-              {/* <Text style={styles.speakButtonText}>{isSpeaking ? 'Stop' : 'Speak'}</Text> */}
+              <FontAwesome5 name={isSpeaking ? 'stop' : 'volume-up'} size={36} color="#FFF" />
             </LinearGradient>
           </TouchableOpacity>
           <TouchableOpacity style={styles.sideButton} onPress={openCamera}>
-            <LinearGradient
-              colors={['#40C4FF', '#81D4FA']}
-              style={styles.buttonGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
+            <LinearGradient colors={['#40C4FF', '#81D4FA']} style={styles.buttonGradient}>
               <MaterialIcons name="photo-camera" size={20} color="#FFF" />
-              {/* <Text style={styles.sideButtonText}>Camera</Text> */}
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -171,7 +217,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     marginBottom: 16,
-    minHeight: 450,
+    minHeight: 350,
   },
   input: {
     flex: 1,
@@ -192,11 +238,54 @@ const styles = StyleSheet.create({
     elevation: 2,
     shadowColor: '#000',
   },
+  historyContainer: {
+    marginBottom: 16,
+  },
+  historyTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  historyChip: {
+    backgroundColor: '#E5E5EA',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    marginRight: 8,
+  },
+  historyText: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
+  },
   quickTextContainer: {
+    marginBottom: 16,
+  },
+  categorySelector: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  categoryChip: {
+    backgroundColor: '#E5E5EA',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    marginHorizontal: 4,
+  },
+  selectedCategoryChip: {
+    backgroundColor: '#007AFF',
+  },
+  categoryText: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '600',
+  },
+  phraseContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    marginBottom: 16,
   },
   quickTextChip: {
     backgroundColor: '#E5E5EA',
@@ -216,71 +305,55 @@ const styles = StyleSheet.create({
   bottomControl: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 16,
+    justifyContent: 'center',
+    gap: 30,
     marginTop: 16,
   },
   speakButton: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 8,
+    overflow: 'hidden',
+    transform: [{ scale: 1 }],
+  },
+  speakButtonGradient: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+  },
+  sideButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 6,
     shadowColor: '#000',
     shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 3 },
     shadowRadius: 6,
     overflow: 'hidden',
-  },
-  speakButtonGradient: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 45,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  speakButtonText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '700',
-    marginTop: 6,
-    textTransform: 'uppercase',
-  },
-  sideButton: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 5,
-    overflow: 'hidden',
+    transform: [{ scale: 1 }],
   },
   buttonGradient: {
     width: '100%',
     height: '100%',
-    borderRadius: 50,
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'column',
-    gap: 6,
-    // borderWidth: 10,
-    // borderColor: 'rgba(255, 255, 255, 0.2)',
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
- 
-  },
-  sideButtonText: {
-    color: '#FFF',
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'uppercase',
+    borderColor: 'rgba(255, 255, 255, 0.4)',
   },
 });
 
