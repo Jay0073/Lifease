@@ -17,7 +17,20 @@ const TextToSpeechScreen = () => {
   const [loading, setLoading] = useState(false);
   const [speechRate, setSpeechRate] = useState(1.0);
   const [history, setHistory] = useState([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
   const [selectedCategory, setSelectedCategory] = useState('Greetings');
+  const [selectedLanguage, setSelectedLanguage] = useState('hi-IN');
+  const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
+
+  const languages = [
+    { label: 'English', code: 'en-US' },
+    { label: 'Hindi', code: 'hi-IN' },
+    { label: 'Tamil', code: 'ta-IN' },
+    { label: 'Telugu', code: 'te-IN' },
+    { label: 'Bengali', code: 'bn-IN' },
+    { label: 'Marathi', code: 'mr-IN' },
+    { label: 'Kannada', code: 'kn-IN' },
+  ];
 
   const quickPhrases = {
     Greetings: ['Hello', 'Good morning', 'How are you?', 'Goodbye'],
@@ -32,7 +45,12 @@ const TextToSpeechScreen = () => {
       setIsSpeaking(false);
     } else {
       if (text.trim() !== '') {
-        Speech.speak(text, {
+        let textToSpeak = text;
+        if (selectedLanguage !== 'hi-IN') {
+          textToSpeak = await translateText(text, selectedLanguage);
+        }
+        Speech.speak(textToSpeak, {
+          language: selectedLanguage,
           rate: speechRate,
           onDone: () => setIsSpeaking(false),
           onStopped: () => setIsSpeaking(false),
@@ -41,10 +59,25 @@ const TextToSpeechScreen = () => {
         setIsSpeaking(true);
         if (!history.includes(text)) {
           setHistory([text, ...history.slice(0, 4)]);
+          setHistoryIndex(-1);
         }
       } else {
         Alert.alert('No Text', 'Please enter text to speak.');
       }
+    }
+  };
+
+  const translateText = async (text, targetLanguage) => {
+    try {
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+      const prompt = `Translate the following text to the language corresponding to the locale ${targetLanguage}. Return only the translated text. Text: "${text.trim()}"`;
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      return await response.text();
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Error', 'Failed to translate text.');
+      return text;
     }
   };
 
@@ -121,9 +154,16 @@ const TextToSpeechScreen = () => {
     }
   };
 
-  const adjustSpeechRate = (increment) => {
-    const newRate = Math.min(Math.max(speechRate + increment, 0.5), 2.0);
-    setSpeechRate(newRate);
+  const cyclePreviousPhrase = () => {
+    if (history.length === 0) return;
+    const newIndex = historyIndex + 1 < history.length ? historyIndex + 1 : 0;
+    setHistoryIndex(newIndex);
+    setText(history[newIndex] || '');
+    Haptics.selectionAsync();
+  };
+
+  const toggleLanguageDropdown = () => {
+    setShowLanguageDropdown(!showLanguageDropdown);
     Haptics.selectionAsync();
   };
 
@@ -138,26 +178,66 @@ const TextToSpeechScreen = () => {
           onChangeText={setText}
           multiline
         />
+        <TouchableOpacity style={styles.languageButton} onPress={toggleLanguageDropdown}>
+          <FontAwesome5 name="globe" size={16} color="#666" />
+        </TouchableOpacity>
         <TouchableOpacity style={styles.clearButtonOverlay} onPress={() => setText('')}>
           <FontAwesome5 name="trash" size={20} color="#666" />
         </TouchableOpacity>
       </BlurView>
 
-      <View style={styles.historyContainer}>
-        <Text style={styles.historyTitle}>Recent Phrases</Text>
-        <FlatList
-          data={history}
-          horizontal
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={({ item }) => (
-            <TouchableOpacity style={styles.historyChip} onPress={() => setText(item)}>
-              <Text style={styles.historyText}>{item.length > 20 ? item.slice(0, 20) + '...' : item}</Text>
+      {showLanguageDropdown && (
+        <View style={styles.languageDropdown}>
+          {languages.map((lang) => (
+            <TouchableOpacity
+              key={lang.code}
+              style={[styles.languageChip, selectedLanguage === lang.code && styles.selectedLanguageChip]}
+              onPress={() => {
+                setSelectedLanguage(lang.code);
+                setShowLanguageDropdown(false);
+              }}
+            >
+              <Text style={styles.languageText}>{lang.label}</Text>
             </TouchableOpacity>
-          )}
+          ))}
+        </View>
+      )}
+
+      <View style={styles.historyContainer}>
+        <View style={styles.historyHeader}>
+          <FlatList
+        data={history.slice(0, 3)}
+        horizontal
+        keyExtractor={(_, index) => index.toString()}
+        renderItem={({ item }) => (
+          <TouchableOpacity style={styles.historyChip} onPress={() => setText(item)}>
+            <Text style={styles.historyText}>
+          {item.length > 25 ? `${item.slice(0, 22).trim()}...` : item}
+            </Text>
+          </TouchableOpacity>
+        )}
+        contentContainerStyle={[styles.historyList, { paddingRight: 50 }]}
+        showsHorizontalScrollIndicator={false}
+          />
+          <TouchableOpacity
+        style={[
+          styles.backButton,
+          { backgroundColor: history.length === 0 ? '#E0E0E0' : '#007AFF' },
+        ]}
+        onPress={cyclePreviousPhrase}
+        disabled={history.length === 0}
+          >
+        <Feather
+          name="arrow-left"
+          size={20}
+          color={history.length === 0 ? '#AAA' : '#FFF'}
         />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.quickTextContainer}>
+        <Text style={styles.sectionTitle}>Commonly Used Phrases</Text>
         <View style={styles.categorySelector}>
           {Object.keys(quickPhrases).map((category) => (
             <TouchableOpacity
@@ -169,7 +249,7 @@ const TextToSpeechScreen = () => {
             </TouchableOpacity>
           ))}
         </View>
-        <View style={styles.phraseContainer}>
+        <View style={styles.phraseGrid}>
           {quickPhrases[selectedCategory].map((item, index) => (
             <TouchableOpacity key={index} style={styles.quickTextChip} onPress={() => setText(item)}>
               <Text style={styles.quickText}>{item}</Text>
@@ -182,7 +262,6 @@ const TextToSpeechScreen = () => {
         <ActivityIndicator size="large" color="#007AFF" style={styles.loader} />
       ) : (
         <View style={styles.bottomControl}>
-          
           <TouchableOpacity style={styles.sideButton} onPress={enhanceText}>
             <LinearGradient colors={['#FF6F61', '#FF9A76']} style={styles.buttonGradient}>
               <Feather name="edit-2" size={20} color="#FFF" />
@@ -216,17 +295,64 @@ const styles = StyleSheet.create({
   inputContainer: {
     borderRadius: 12,
     overflow: 'hidden',
-    marginBottom: 16,
-    minHeight: 350,
+    marginBottom: 12,
+    minHeight: 250,
+    position: 'relative',
   },
   input: {
     flex: 1,
     padding: 12,
-    fontSize: 16,
+    paddingTop: 36,
+    fontSize: 20,
+    fontWeight: '500',
     color: '#333',
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     textAlignVertical: 'top',
-    minHeight: 120,
+    minHeight: 100,
+  },
+  languageButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderRadius: 12,
+    padding: 4,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+  },
+  languageDropdown: {
+    position: 'absolute',
+    top: 50, 
+    left: '60%',
+    right: 26,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 12,
+    padding: 8,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 6,
+    zIndex: 1000,
+    width: 120,
+  },
+  languageChip: {
+    backgroundColor: '#E5E5EA',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    marginVertical: 4,
+  },
+  selectedLanguageChip: {
+    backgroundColor: '#007AFF',
+  },
+  languageText: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '600',
   },
   clearButtonOverlay: {
     position: 'absolute',
@@ -239,20 +365,51 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
   },
   historyContainer: {
-    marginBottom: 16,
+    backgroundColor: '#E8F0FE',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
   },
-  historyTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+  historyHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 8,
   },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#333',
+  },
+  backButton: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+  },
+  historyList: {
+    paddingVertical: 2,
+  },
   historyChip: {
-    backgroundColor: '#E5E5EA',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 16,
-    marginRight: 8,
+    marginRight: 10,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
   },
   historyText: {
     fontSize: 14,
@@ -260,44 +417,67 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   quickTextContainer: {
-    marginBottom: 16,
+    backgroundColor: '#E8F0FE',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
   },
   categorySelector: {
     flexDirection: 'row',
     justifyContent: 'center',
     marginBottom: 8,
+    marginTop: 10,
+    paddingBottom: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
   },
   categoryChip: {
-    backgroundColor: '#E5E5EA',
+    backgroundColor: '#D1D1D6',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 16,
-    marginHorizontal: 4,
+    marginHorizontal: 9,
+    borderWidth: 1,
+    borderColor: '#C0C0C0',
   },
   selectedCategoryChip: {
     backgroundColor: '#007AFF',
+    borderColor: '#005BB5',
   },
   categoryText: {
     fontSize: 14,
     color: '#333',
     fontWeight: '600',
   },
-  phraseContainer: {
+  phraseGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
   },
   quickTextChip: {
-    backgroundColor: '#E5E5EA',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 16,
     margin: 4,
+    width: '45%',
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
   },
   quickText: {
     fontSize: 14,
     color: '#333',
     fontWeight: '500',
+    textAlign: 'center',
   },
   loader: {
     marginVertical: 16,
@@ -307,7 +487,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 30,
-    marginTop: 16,
+    marginTop: 12,
   },
   speakButton: {
     width: 80,
@@ -357,4 +537,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default TextToSpeechScreen;
+export default TextToSpeechScreen;  
