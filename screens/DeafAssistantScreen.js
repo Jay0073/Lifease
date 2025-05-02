@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -10,33 +10,113 @@ import {
   Easing,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { Audio } from "expo-av";
 
 const { width, height } = Dimensions.get("window");
 
 const DeafAssistantScreen = () => {
-  const [mode, setMode] = useState("audioToSign"); // 'audioToSign' or 'audioToText'
+  const [mode, setMode] = useState("audioToText");
   const [recording, setRecording] = useState(false);
   const [pulseAnim] = useState(new Animated.Value(1));
-  const [responseText, setResponseText] = useState(""); // Added state to manage text response
+  const [responseText, setResponseText] = useState("");
+  const recordingRef = useRef(null);
+  const wsRef = useRef(null);
 
-  const handleRecord = () => {
-    setRecording((prev) => !prev);
+  useEffect(() => {
+    console.log("Initializing WebSocket...");
+    const ws = new WebSocket("ws://192.168.152.157:8080");
+    wsRef.current = ws;
 
+    ws.onopen = () => console.log("WebSocket connected");
+
+    ws.onmessage = (message) => {
+      console.log("WebSocket message received:", message.data);
+      const data = JSON.parse(message.data);
+      if (data.transcript) {
+        console.log("Transcript received:", data.transcript);
+        setResponseText((prev) => prev + " " + data.transcript);
+      }
+    };
+
+    ws.onerror = (e) => console.error("WebSocket error:", e.message);
+
+    ws.onclose = () => console.log("WebSocket closed");
+
+    return () => {
+      console.log("Closing WebSocket...");
+      ws.close();
+    };
+  }, []);
+
+  const handleRecord = async () => {
     if (!recording) {
+      console.log("Starting recording...");
+      setRecording(true);
+      setResponseText("");
       startPulse();
-      if (mode === "audioToText") {
-        // Simulate getting some text response from audio
-        setTimeout(() => {
-          setResponseText("Recognized text from audio...");
-        }, 2000);
+
+      const { granted } = await Audio.requestPermissionsAsync();
+      if (!granted) {
+        console.error("Microphone permission denied");
+        setRecording(false);
+        return;
+      }
+
+      try {
+        console.log("Preparing to record...");
+        const recording = new Audio.Recording();
+        await recording.prepareToRecordAsync(
+          Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY
+        );
+        await recording.startAsync();
+        console.log("Recording started");
+        recordingRef.current = recording;
+
+        const interval = setInterval(async () => {
+          if (recordingRef.current) {
+            console.log("Fetching audio chunk...");
+            const uri = recordingRef.current.getURI();
+            console.log("Audio URI:", uri);
+            const file = await fetch(uri);
+            const blob = await file.blob();
+            blob.arrayBuffer().then((buffer) => {
+              if (wsRef.current?.readyState === WebSocket.OPEN) {
+                console.log("Sending audio chunk to WebSocket...");
+                wsRef.current.send(buffer);
+              } else {
+                console.warn(
+                  "WebSocket is not open. Ready state:",
+                  wsRef.current?.readyState
+                );
+              }
+            });
+          }
+        }, 1000);
+
+        recordingRef.current.interval = interval;
+      } catch (err) {
+        console.error("Recording error:", err);
+        setRecording(false);
       }
     } else {
+      console.log("Stopping recording...");
+      setRecording(false);
       pulseAnim.stopAnimation();
       pulseAnim.setValue(1);
+
+      try {
+        await recordingRef.current.stopAndUnloadAsync();
+        clearInterval(recordingRef.current.interval);
+        console.log("Recording stopped and unloaded");
+        recordingRef.current = null;
+      } catch (e) {
+        console.error("Stop recording error:", e);
+      }
     }
   };
 
   const startPulse = () => {
+    console.log("Starting pulse animation...");
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
@@ -60,16 +140,16 @@ const DeafAssistantScreen = () => {
   };
 
   const handleToggleMode = () => {
+    console.log("Toggling mode...");
     setMode((prevMode) =>
       prevMode === "audioToSign" ? "audioToText" : "audioToSign"
     );
-    setResponseText(""); // Clear old response when switching mode
+    setResponseText("");
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Display Area */}
         <View style={styles.displayArea}>
           {mode === "audioToSign" ? (
             <View style={styles.signArea}>
@@ -86,9 +166,7 @@ const DeafAssistantScreen = () => {
           )}
         </View>
 
-        {/* Bottom Button Bar */}
         <View style={styles.buttonBar}>
-          {/* Left Small Button - Outside Mode */}
           <TouchableOpacity
             style={styles.smallButton}
             onPress={handleOutsideMode}
@@ -98,7 +176,6 @@ const DeafAssistantScreen = () => {
             <Ionicons name="navigate-circle-outline" size={30} color="white" />
           </TouchableOpacity>
 
-          {/* Center Large Mic Button */}
           <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
             <TouchableOpacity
               style={styles.largeButton}
@@ -114,7 +191,6 @@ const DeafAssistantScreen = () => {
             </TouchableOpacity>
           </Animated.View>
 
-          {/* Right Small Button - Toggle Mode */}
           <TouchableOpacity
             style={styles.smallButton}
             onPress={handleToggleMode}
@@ -161,20 +237,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: "#7f8c8d",
     marginTop: 10,
-  },
-  textOutputContainer: {
-    width: "100%",
-    backgroundColor: "#ecf0f1",
-    borderRadius: 10,
-    padding: 20,
-    elevation: 5,
-    minHeight: 150,
-    justifyContent: "center",
-  },
-  textOutput: {
-    fontSize: 18,
-    color: "#2c3e50",
-    textAlign: "left",
   },
   buttonBar: {
     flexDirection: "row",
