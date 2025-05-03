@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Lifease-2",
-    "slug": "lifease",
+    "name": "Lifeasee",
+    "slug": "lifeasee",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -35,8 +35,8 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow $(Lifease-2) to access your camera",
-          "microphonePermission": "Allow $(Lifease-2) to access your microphone",
+          "cameraPermission": "Allow $(Lifeasee) to access your camera",
+          "microphonePermission": "Allow $(Lifeasee) to access your microphone",
           "recordAudioAndroid": true
         }
       ]
