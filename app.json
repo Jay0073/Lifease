@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Lifease-2",
-    "slug": "lifease",
+    "slug": "life-easy",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -21,14 +21,18 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
       "eas": {
-        "projectId": "de35a233-bdfa-426b-99e1-9674fa9956aa"
+        "projectId": "1f5e8930-d4ed-475b-b2e3-3464fee181ff"
       }
     },
     "plugins": [
@@ -41,6 +45,6 @@
         }
       ]
     ],
-    "owner": "jay0073"
+    "owner": "raviteja001"
   }
 }
