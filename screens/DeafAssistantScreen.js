@@ -17,7 +17,7 @@ import * as FileSystem from "expo-file-system"; // Import FileSystem
 const { width, height } = Dimensions.get("window");
 
 // IMPORTANT: Replace with your actual server IP/domain in production
-const WEBSOCKET_URL = "ws://192.168.20.157:8080"; // Or your machine's local IP for testing
+const WEBSOCKET_URL = "ws://lifeasee-server.onrender.com/216.24.57.4:10000";
 
 const DeafAssistantScreen = () => {
   const [mode, setMode] = useState("audioToText");
@@ -158,7 +158,7 @@ const DeafAssistantScreen = () => {
 
           // Record for a short duration (e.g., 1500ms)
           // Adjust this based on desired latency vs overhead trade-off
-          await new Promise((resolve) => setTimeout(resolve, 1500));
+          await new Promise((resolve) => setTimeout(resolve, 800));
 
           // Check again if we should stop before processing
           if (!recordingLoopActive.current) {
