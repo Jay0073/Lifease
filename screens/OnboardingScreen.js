@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -10,99 +10,115 @@ import {
   Platform,
   KeyboardAvoidingView,
   ScrollView,
-} from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Haptics from 'expo-haptics';
-import * as Speech from 'expo-speech';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
-import { FontAwesome5 } from '@expo/vector-icons';
+} from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Haptics from "expo-haptics";
+import * as Speech from "expo-speech";
+import { LinearGradient } from "expo-linear-gradient";
+import { BlurView } from "expo-blur";
+import { FontAwesome5 } from "@expo/vector-icons";
 
 export default function OnboardingScreen({ navigation }) {
-  const [name, setName] = useState('');
-  const [age, setAge] = useState('');
-  const [disability, setDisability] = useState('');
-  const [language, setLanguage] = useState('');
-  const [emergencyContact, setEmergencyContact] = useState('');
-  const [emergencyPhone, setEmergencyPhone] = useState('');
+  const [name, setName] = useState("");
+  const [age, setAge] = useState("");
+  const [disability, setDisability] = useState("");
+  const [language, setLanguage] = useState("");
+  const [emergencyContact, setEmergencyContact] = useState("");
+  const [emergencyPhone, setEmergencyPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [showDisabilityDropdown, setShowDisabilityDropdown] = useState(false);
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
 
   const disabilities = [
-    { label: 'Blind', value: 'blind' },
-    { label: 'Deaf', value: 'deaf' },
-    { label: 'Mute', value: 'mute' },
-    { label: 'Motor-Impaired', value: 'motor-impaired' },
-    { label: 'Other', value: 'other' },
+    { label: "Blind", value: "blind" },
+    { label: "Deaf", value: "deaf" },
+    { label: "Mute", value: "mute" },
+    { label: "Motor-Impaired", value: "motor-impaired" },
+    { label: "Other", value: "other" },
   ];
 
   const languages = [
-    { label: 'English', value: 'en-US' },
-    { label: 'Hindi', value: 'hi-IN' },
-    { label: 'Tamil', value: 'ta-IN' },
-    { label: 'Telugu', value: 'te-IN' },
-    { label: 'Bengali', value: 'bn-IN' },
-    { label: 'Marathi', value: 'mr-IN' },
-    { label: 'Kannada', value: 'kn-IN' },
+    { label: "English", value: "en-US" },
+    { label: "Hindi", value: "hi-IN" },
+    { label: "Tamil", value: "ta-IN" },
+    { label: "Telugu", value: "te-IN" },
+    { label: "Bengali", value: "bn-IN" },
+    { label: "Marathi", value: "mr-IN" },
+    { label: "Kannada", value: "kn-IN" },
   ];
 
   const validateForm = () => {
-    if (!name.trim()) return 'Name is required.';
-    if (!age.trim() || isNaN(age) || age < 1 || age > 120) return 'Please enter a valid age (1–120).';
-    if (!disability) return 'Please select a disability.';
-    if (!language) return 'Please select a preferred language.';
-    if (!emergencyContact.trim()) return 'Emergency contact name is required.';
-    if (!emergencyPhone.trim() || !/^\d{10}$/.test(emergencyPhone)) return 'Please enter a valid 10-digit phone number.';
+    if (!name.trim()) return "Name is required.";
+    if (!age.trim() || isNaN(age) || age < 1 || age > 120)
+      return "Please enter a valid age (1–120).";
+    if (!disability) return "Please select a disability.";
+    if (!language) return "Please select a preferred language.";
+    if (!emergencyContact.trim()) return "Emergency contact name is required.";
+    if (!emergencyPhone.trim() || !/^\d{10}$/.test(emergencyPhone))
+      return "Please enter a valid 10-digit phone number.";
     return null;
   };
 
   const handleSubmit = async () => {
     const error = validateForm();
     if (error) {
-      Alert.alert('Error', error);
+      Alert.alert("Error", error);
       return;
     }
-
+  
     setLoading(true);
     try {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      const formData = { name, age, disability, language, emergencyContact, emergencyPhone };
-      await AsyncStorage.setItem('userDetails', JSON.stringify(formData));
-      console.log('Form Data:', formData);
-      Alert.alert('Success', 'Your details have been submitted!', [
-        {
-          text: 'OK',
-          onPress: () => navigation.navigate('HomeScreen', { userDetails: formData }),
-        },
-      ]);
+      const formData = {
+        name,
+        age,
+        disability,
+        language,
+        emergencyContact,
+        emergencyPhone,
+      };
+      await AsyncStorage.setItem("userDetails", JSON.stringify(formData));
+      
+      // Reset navigation stack to home screen
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'HomeScreen' }],
+      });
     } catch (error) {
-      Alert.alert('Error', 'Failed to submit details. Please try again.');
+      Alert.alert("Error", "Failed to submit details. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSkip = () => {
+  const handleSkip = async () => {
     Haptics.selectionAsync();
-    navigation.navigate('HomeScreen');
+    // Store minimal user data when skipping
+    const skipData = { skipped: true };
+    await AsyncStorage.setItem("userDetails", JSON.stringify(skipData));
+    
+    // Reset navigation stack to home screen
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'HomeScreen' }],
+    });
   };
 
   const speakName = async () => {
     if (!name.trim()) {
-      Alert.alert('No Name', 'Please enter your name to preview.');
+      Alert.alert("No Name", "Please enter your name to preview.");
       return;
     }
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Speech.speak(`Hello, ${name}`, { language: language || 'en-US' });
+    Speech.speak(`Hello, ${name}`, { language: language || "en-US" });
   };
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <LinearGradient colors={['#E8F0FE', '#F5F5F5']} style={styles.background}>
+      <LinearGradient colors={["#E8F0FE", "#F5F5F5"]} style={styles.background}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.header}>
             <FontAwesome5 name="heart" size={40} color="#007AFF" />
@@ -110,9 +126,17 @@ export default function OnboardingScreen({ navigation }) {
             <Text style={styles.subtitle}>Tell us about yourself</Text>
           </View>
 
-          <BlurView intensity={Platform.OS === 'ios' ? 80 : 100} style={styles.inputContainer}>
+          <BlurView
+            intensity={Platform.OS === "ios" ? 80 : 100}
+            style={styles.inputContainer}
+          >
             <View style={styles.inputWrapper}>
-              <FontAwesome5 name="user" size={20} color="#666" style={styles.inputIcon} />
+              <FontAwesome5
+                name="user"
+                size={20}
+                color="#666"
+                style={styles.inputIcon}
+              />
               <TextInput
                 style={styles.input}
                 placeholder="Full Name"
@@ -134,7 +158,12 @@ export default function OnboardingScreen({ navigation }) {
               </TouchableOpacity>
             </View>
             <View style={styles.inputWrapper}>
-              <FontAwesome5 name="birthday-cake" size={20} color="#666" style={styles.inputIcon} />
+              <FontAwesome5
+                name="birthday-cake"
+                size={20}
+                color="#666"
+                style={styles.inputIcon}
+              />
               <TextInput
                 style={styles.input}
                 placeholder="Age"
@@ -148,7 +177,12 @@ export default function OnboardingScreen({ navigation }) {
               />
             </View>
             <View style={styles.inputWrapper}>
-              <FontAwesome5 name="accessible-icon" size={20} color="#666" style={styles.inputIcon} />
+              <FontAwesome5
+                name="accessible-icon"
+                size={20}
+                color="#666"
+                style={styles.inputIcon}
+              />
               <TouchableOpacity
                 style={styles.dropdownButton}
                 onPress={() => {
@@ -159,10 +193,12 @@ export default function OnboardingScreen({ navigation }) {
                 accessibilityHint="Tap to select your disability type"
               >
                 <Text style={styles.dropdownText}>
-                  {disability ? disabilities.find((d) => d.value === disability)?.label : 'Select Disability'}
+                  {disability
+                    ? disabilities.find((d) => d.value === disability)?.label
+                    : "Select Disability"}
                 </Text>
                 <FontAwesome5
-                  name={showDisabilityDropdown ? 'chevron-up' : 'chevron-down'}
+                  name={showDisabilityDropdown ? "chevron-up" : "chevron-down"}
                   size={16}
                   color="#666"
                 />
@@ -173,7 +209,10 @@ export default function OnboardingScreen({ navigation }) {
                 {disabilities.map((item) => (
                   <TouchableOpacity
                     key={item.value}
-                    style={[styles.dropdownItem, disability === item.value && styles.selectedDropdownItem]}
+                    style={[
+                      styles.dropdownItem,
+                      disability === item.value && styles.selectedDropdownItem,
+                    ]}
                     onPress={() => {
                       setDisability(item.value);
                       setShowDisabilityDropdown(false);
@@ -186,7 +225,12 @@ export default function OnboardingScreen({ navigation }) {
               </View>
             )}
             <View style={styles.inputWrapper}>
-              <FontAwesome5 name="globe" size={20} color="#666" style={styles.inputIcon} />
+              <FontAwesome5
+                name="globe"
+                size={20}
+                color="#666"
+                style={styles.inputIcon}
+              />
               <TouchableOpacity
                 style={styles.dropdownButton}
                 onPress={() => {
@@ -197,10 +241,12 @@ export default function OnboardingScreen({ navigation }) {
                 accessibilityHint="Tap to select your preferred language"
               >
                 <Text style={styles.dropdownText}>
-                  {language ? languages.find((l) => l.value === language)?.label : 'Select Language'}
+                  {language
+                    ? languages.find((l) => l.value === language)?.label
+                    : "Select Language"}
                 </Text>
                 <FontAwesome5
-                  name={showLanguageDropdown ? 'chevron-up' : 'chevron-down'}
+                  name={showLanguageDropdown ? "chevron-up" : "chevron-down"}
                   size={16}
                   color="#666"
                 />
@@ -211,7 +257,10 @@ export default function OnboardingScreen({ navigation }) {
                 {languages.map((item) => (
                   <TouchableOpacity
                     key={item.value}
-                    style={[styles.dropdownItem, language === item.value && styles.selectedDropdownItem]}
+                    style={[
+                      styles.dropdownItem,
+                      language === item.value && styles.selectedDropdownItem,
+                    ]}
                     onPress={() => {
                       setLanguage(item.value);
                       setShowLanguageDropdown(false);
@@ -224,7 +273,12 @@ export default function OnboardingScreen({ navigation }) {
               </View>
             )}
             <View style={styles.inputWrapper}>
-              <FontAwesome5 name="user-shield" size={20} color="#666" style={styles.inputIcon} />
+              <FontAwesome5
+                name="user-shield"
+                size={20}
+                color="#666"
+                style={styles.inputIcon}
+              />
               <TextInput
                 style={styles.input}
                 placeholder="Emergency Contact Name"
@@ -238,7 +292,12 @@ export default function OnboardingScreen({ navigation }) {
               />
             </View>
             <View style={styles.inputWrapper}>
-              <FontAwesome5 name="phone" size={20} color="#666" style={styles.inputIcon} />
+              <FontAwesome5
+                name="phone"
+                size={20}
+                color="#666"
+                style={styles.inputIcon}
+              />
               <TextInput
                 style={styles.input}
                 placeholder="Emergency Contact Phone"
@@ -263,7 +322,11 @@ export default function OnboardingScreen({ navigation }) {
               <Text style={styles.skipButtonText}>Skip</Text>
             </TouchableOpacity>
             {loading ? (
-              <ActivityIndicator size="large" color="#007AFF" style={styles.loader} />
+              <ActivityIndicator
+                size="large"
+                color="#007AFF"
+                style={styles.loader}
+              />
             ) : (
               <TouchableOpacity
                 style={styles.submitButton}
@@ -271,7 +334,10 @@ export default function OnboardingScreen({ navigation }) {
                 accessibilityLabel="Submit button"
                 accessibilityHint="Tap to submit your details"
               >
-                <LinearGradient colors={['#00DDEB', '#6B73FF']} style={styles.buttonGradient}>
+                <LinearGradient
+                  colors={["#00DDEB", "#6B73FF"]}
+                  style={styles.buttonGradient}
+                >
                   <Text style={styles.buttonText}>Submit</Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -293,39 +359,40 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 24,
     paddingBottom: 48,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
+    marginTop: 80,
     marginBottom: 32,
   },
   title: {
     fontSize: 28,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: "700",
+    color: "#333",
     marginTop: 12,
   },
   subtitle: {
     fontSize: 18,
-    color: '#666',
+    color: "#666",
     marginTop: 8,
   },
   inputContainer: {
     borderRadius: 12,
-    overflow: 'hidden',
+    overflow: "hidden",
     padding: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
     elevation: 4,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOpacity: 0.2,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 6,
   },
   inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: "#E0E0E0",
     marginBottom: 16,
   },
   inputIcon: {
@@ -334,32 +401,32 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 18,
-    color: '#333',
+    color: "#333",
     paddingVertical: 12,
   },
   speakButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
   },
   dropdownButton: {
     flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: 12,
   },
   dropdownText: {
     fontSize: 18,
-    color: '#333',
+    color: "#333",
   },
   dropdown: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderRadius: 12,
     padding: 8,
     marginBottom: 16,
     elevation: 4,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOpacity: 0.3,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 6,
@@ -370,25 +437,25 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   selectedDropdownItem: {
-    backgroundColor: '#007AFF',
+    backgroundColor: "#007AFF",
   },
   dropdownItemText: {
     fontSize: 16,
-    color: '#333',
+    color: "#333",
   },
   buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginTop: 24,
   },
   submitButton: {
     borderRadius: 12,
-    overflow: 'hidden',
+    overflow: "hidden",
     flex: 1,
     marginLeft: 16,
     elevation: 6,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOpacity: 0.25,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 8,
@@ -398,22 +465,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: "#007AFF",
   },
   skipButtonText: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#007AFF',
+    fontWeight: "600",
+    color: "#007AFF",
   },
   buttonGradient: {
     paddingVertical: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   buttonText: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#FFF',
+    fontWeight: "600",
+    color: "#FFF",
   },
   loader: {
     marginVertical: 24,

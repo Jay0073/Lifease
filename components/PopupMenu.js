@@ -12,21 +12,30 @@ export function PopupMenu({ visible, onClose, navigation }) {
     { label: 'Tutorial', icon: 'book-outline', screen: 'Help' },
     { label: 'Feedback', icon: 'chatbubble-ellipses-outline', screen: 'Help' },
   ];
+  
 
   return (
     <Modal transparent visible={visible} animationType="fade">
-      <TouchableOpacity style={styles.overlay} onPress={onClose}>
+      <TouchableOpacity 
+        style={styles.overlay} 
+        onPress={onClose}
+        activeOpacity={0.7}
+      >
         <View style={styles.popup}>
           {menuItems.map((item, index) => (
             <TouchableOpacity
               key={index}
-              style={styles.menuItem}
+              style={[
+                styles.menuItem,
+                index === menuItems.length - 1 && styles.lastMenuItem
+              ]}
               onPress={() => {
                 onClose();
                 navigation.navigate(item.screen);
               }}
+              activeOpacity={0.7}
             >
-              <Ionicons name={item.icon} size={20} color="#005" />
+              <Ionicons name={item.icon} size={22} color="#333" />
               <Text style={styles.menuItemText}>{item.label}</Text>
             </TouchableOpacity>
           ))}
@@ -39,37 +48,41 @@ export function PopupMenu({ visible, onClose, navigation }) {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.1)',
+    backgroundColor: 'rgba(0,0,0,0.2)',
     justifyContent: 'flex-start',
     alignItems: 'flex-end',
+    zIndex: 1000,
   },
   popup: {
-    marginTop: 45,
-    marginRight: 15,
+    marginTop: 55,
+    marginRight: 16,
     backgroundColor: '#fff',
-    paddingVertical: 15,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-    elevation: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderRadius: 16,
+    elevation: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    minWidth: 200,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
-    paddingLeft: 20,
-    paddingRight: 30,
-    marginBottom: 10,
-    borderRadius: 8,
-    backgroundColor: '#f1f1f1',
-    gap: 10,
+    paddingHorizontal: 16,
+    marginVertical: 2,
+    borderRadius: 10,
+    backgroundColor: '#f8f8f8',
+  },
+  lastMenuItem: {
+    marginBottom: 0,
   },
   menuItemText: {
-    fontSize: 18,
+    fontSize: 16,
     marginLeft: 12,
     color: '#333',
+    fontWeight: '500',
   },
 });
