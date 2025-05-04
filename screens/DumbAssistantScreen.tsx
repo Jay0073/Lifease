@@ -46,9 +46,6 @@ const TextToSpeechScreen = () => {
     } else {
       if (text.trim() !== '') {
         let textToSpeak = text;
-        if (selectedLanguage !== 'hi-IN') {
-          textToSpeak = await translateText(text, selectedLanguage);
-        }
         Speech.speak(textToSpeak, {
           language: selectedLanguage,
           rate: speechRate,
@@ -86,20 +83,26 @@ const TextToSpeechScreen = () => {
       Alert.alert('No Text', 'Please enter text to enhance.');
       return;
     }
-
+  
     try {
       setLoading(true);
+  
+      // Combine the history context with the current text
+      const context = history.length > 0 
+        ? `Context: ${history.join(' ')}\n` 
+        : '';
+  
       const model = genAI.getGenerativeModel({
         model: 'gemini-2.0-flash',
         generationConfig: { temperature: 0.2, topK: 1, topP: 1, maxOutputTokens: 400 },
       });
-
-      const prompt = `You are a professional speech writer. Rewrite the following text to make it clear, concise, and professional for speech delivery. Return only the improved text without explanations. Text: "${text.trim()}"`;
-
+  
+      const prompt = `${context}You are a deaf assistant. Rewrite the following text to make it clear, concise, and easy to comprehend. Return only the improved text without explanations. Text: "${text.trim()}"`;
+  
       const result = await model.generateContent(prompt);
       const response = await result.response;
       const enhancedText = await response.text();
-
+  
       setText(enhancedText.trim());
       console.log('Enhanced Text:', enhancedText.trim());
     } catch (error) {
@@ -179,7 +182,7 @@ const TextToSpeechScreen = () => {
           multiline
         />
         <TouchableOpacity style={styles.languageButton} onPress={toggleLanguageDropdown}>
-          <FontAwesome5 name="globe" size={16} color="#666" />
+          <FontAwesome5 name="globe" size={20} color="#666" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.clearButtonOverlay} onPress={() => setText('')}>
           <FontAwesome5 name="trash" size={20} color="#666" />
@@ -190,15 +193,21 @@ const TextToSpeechScreen = () => {
         <View style={styles.languageDropdown}>
           {languages.map((lang) => (
             <TouchableOpacity
-              key={lang.code}
-              style={[styles.languageChip, selectedLanguage === lang.code && styles.selectedLanguageChip]}
-              onPress={() => {
-                setSelectedLanguage(lang.code);
-                setShowLanguageDropdown(false);
-              }}
-            >
-              <Text style={styles.languageText}>{lang.label}</Text>
-            </TouchableOpacity>
+            key={lang.code}
+            style={[styles.languageChip, selectedLanguage === lang.code && styles.selectedLanguageChip]}
+            onPress={async () => {
+              setSelectedLanguage(lang.code);
+              setShowLanguageDropdown(false);
+          
+              // Translate the text when the language is selected
+              if (text.trim() !== '' && lang.code !== null) {
+                const translatedText = await translateText(text, lang.code);
+                setText(translatedText); // Update the input box with the translated text
+              }
+            }}
+          >
+            <Text style={styles.languageText}>{lang.label}</Text>
+          </TouchableOpacity>
           ))}
         </View>
       )}
@@ -296,7 +305,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     marginBottom: 12,
-    minHeight: 250,
+    minHeight: 260,
     position: 'relative',
   },
   input: {
@@ -487,11 +496,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 30,
-    marginTop: 12,
+    marginTop: 6,
   },
   speakButton: {
-    width: 80,
-    height: 80,
+    width: 90,
+    height: 90,
     borderRadius: 40,
     alignItems: 'center',
     justifyContent: 'center',
@@ -513,9 +522,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.4)',
   },
   sideButton: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 70,
+    height: 70,
+    borderRadius: 50,
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 6,

@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   ScrollView,
 } from "react-native";
+import { CommonActions } from '@react-navigation/native';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import * as Speech from "expo-speech";
@@ -80,10 +81,12 @@ export default function OnboardingScreen({ navigation }) {
       await AsyncStorage.setItem("userDetails", JSON.stringify(formData));
       
       // Reset navigation stack to home screen
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'HomeScreen' }],
-      });
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'HomeScreen' }],
+        })
+      );
     } catch (error) {
       Alert.alert("Error", "Failed to submit details. Please try again.");
     } finally {
@@ -93,15 +96,16 @@ export default function OnboardingScreen({ navigation }) {
 
   const handleSkip = async () => {
     Haptics.selectionAsync();
-    // Store minimal user data when skipping
     const skipData = { skipped: true };
     await AsyncStorage.setItem("userDetails", JSON.stringify(skipData));
-    
+  
     // Reset navigation stack to home screen
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'HomeScreen' }],
-    });
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'HomeScreen' }],
+      })
+    );
   };
 
   const speakName = async () => {
@@ -363,7 +367,6 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    marginTop: 80,
     marginBottom: 32,
   },
   title: {
