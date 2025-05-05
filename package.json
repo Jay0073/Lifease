@@ -5,34 +5,34 @@
   "main": "index.js",
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web"
   },
   "dependencies": {
-    "@expo/metro-runtime": "~4.0.1",
-    "@expo/vector-icons": "^14.0.2",
+    "@expo/metro-runtime": "4.0.1",
+    "@expo/vector-icons": "14.0.2",
     "@google/generative-ai": "^0.24.0",
     "@lottiefiles/dotlottie-react": "^0.6.5",
     "@react-native-async-storage/async-storage": "1.23.1",
-    "@react-native-picker/picker": "^2.9.0",
+    "@react-native-picker/picker": "2.9.0",
     "@react-navigation/bottom-tabs": "^7.3.10",
     "@react-navigation/drawer": "^7.3.9",
     "@react-navigation/native": "^7.1.6",
     "@react-navigation/native-stack": "^7.3.10",
     "axios": "^1.9.0",
     "doctor": "^0.1.26",
-    "expo": "~52.0.46",
-    "expo-av": "~15.0.2",
-    "expo-blur": "^14.1.4",
-    "expo-camera": "~16.0.18",
-    "expo-document-picker": "^13.0.3",
-    "expo-file-system": "~18.0.12",
-    "expo-haptics": "~14.0.1",
-    "expo-image-picker": "^16.0.6",
-    "expo-linear-gradient": "^14.1.4",
-    "expo-speech": "~13.0.1",
-    "expo-status-bar": "~2.0.1",
+    "expo": "52.0.46",
+    "expo-av": "15.0.2",
+    "expo-blur": "14.0.3",
+    "expo-camera": "16.0.18",
+    "expo-document-picker": "13.0.3",
+    "expo-file-system": "18.0.12",
+    "expo-haptics": "14.0.1",
+    "expo-image-picker": "16.0.6",
+    "expo-linear-gradient": "14.0.2",
+    "expo-speech": "13.0.1",
+    "expo-status-bar": "2.0.1",
     "lottie-react-native": "7.1.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
@@ -55,6 +55,22 @@
     "@babel/core": "^7.20.0",
     "@types/react": "~18.3.12",
     "typescript": "^5.3.3"
+  },
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "exclude": [
+          "uuid",
+          "react-native-voice",
+          "react-native-vector-icons",
+          "@lottiefiles/dotlottie-react",
+          "react-native-tts",
+          "react-native-emoji-picker",
+          "react-native-modalize"
+        ],
+        "listUnknownPackages": false
+      }
+    }
   },
   "private": true
 }
