@@ -74,7 +74,7 @@ const HomeScreen = ({ navigation, route }) => {
               accessibilityHint="Tap to access voice accessibility features"
             >
               <Ionicons name="volume-high-outline" size={40} color="#fff" />
-              <Text style={styles.optionText}>Dumb Assistant</Text>
+              <Text style={styles.optionText}>Voice Assistant</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.optionButton}
@@ -83,7 +83,7 @@ const HomeScreen = ({ navigation, route }) => {
               accessibilityHint="Tap to access auditory accessibility features"
             >
               <Ionicons name="ear-outline" size={40} color="#fff" />
-              <Text style={styles.optionText}>Deaf Assistant</Text>
+              <Text style={styles.optionText}>Hearing Assistant</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.optionButton}
@@ -201,7 +201,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: 20,
   },
   optionButton: {
     width: optionSize,
@@ -220,7 +219,7 @@ const styles = StyleSheet.create({
   },
   optionText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'center',
     marginTop: 10,
