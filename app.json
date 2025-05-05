@@ -36,7 +36,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "de35a233-bdfa-426b-99e1-9674fa9956aa"
+        "projectId": "1f5e8930-d4ed-475b-b2e3-3464fee181ff"
       }
     },
     "plugins": [
@@ -49,6 +49,6 @@
         }
       ]
     ],
-    "owner": "jay0073"
+    "owner": "raviteja001"
   }
 }
