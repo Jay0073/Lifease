@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "lifeasee",
+    "name": "Lifease",
     "slug": "lifeasee",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -14,12 +14,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.lifeasee.app",
+      "bundleIdentifier": "lifease.jay0073.com",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
+      "package": "com.yourcompany.yourappname",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -27,16 +29,14 @@
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO"
-      ],
-      "package": "com.lifeasee.app",
-      "versionCode": 1
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
       "eas": {
-        "projectId": "b2e12921-8e71-4ade-9955-db2e0891bfed"
+        "projectId": "c1889f05-14d5-47cc-bc9c-662ef721bb41"
       }
     },
     "plugins": [
@@ -47,9 +47,8 @@
           "microphonePermission": "Allow $(Lifeasee) to access your microphone",
           "recordAudioAndroid": true
         }
-      ],
-      "expo-font"
+      ]
     ],
-    "owner": "jay0073"
+    "owner": "raviteja001"
   }
 }
