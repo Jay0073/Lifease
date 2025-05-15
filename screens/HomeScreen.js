@@ -85,6 +85,19 @@ const HomeScreen = ({ navigation, route }) => {
               <Ionicons name="ear-outline" size={40} color="#fff" />
               <Text style={styles.optionText}>Hearing Assistant</Text>
             </TouchableOpacity>
+
+
+            <TouchableOpacity
+              style={styles.optionButton}
+              onPress={() => navigation.navigate('DeafMuteAssistantScreen')}
+              accessibilityLabel="Deaf & Mute Assistant button"
+              accessibilityHint="Tap to access deaf & mute assistance"
+            >
+              <Ionicons name="accessibility-outline" size={40} color="#fff" />
+              <Text style={styles.optionText}>Deaf & Mute Assistant </Text>
+            </TouchableOpacity>
+
+
             <TouchableOpacity
               style={styles.optionButton}
               onPress={() => navigation.navigate('AIAssistant')}
@@ -94,6 +107,7 @@ const HomeScreen = ({ navigation, route }) => {
               <Ionicons name="sparkles-outline" size={40} color="#fff" />
               <Text style={styles.optionText}>AI Assistant</Text>
             </TouchableOpacity>
+
           </View>
 
           {/* Placeholder Footer */}
