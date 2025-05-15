@@ -35,6 +35,7 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
+      "googleCloudApiKey": "'AIzaSyDUMx_QeHw5mcovnOPmArVz-7VutmSzyh0';",
       "eas": {
         "projectId": "1f5e8930-d4ed-475b-b2e3-3464fee181ff"
       }
