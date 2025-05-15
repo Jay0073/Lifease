@@ -17,7 +17,7 @@ import OnboardingScreen from "../screens/OnboardingScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import HistoryScreen from "../screens/HistoryScreen";
 import HelpScreen from "../screens/HelpScreen";
-
+import DeafMuteAssistantScreen from "../screens/DeafMuteAssistantScreen";
 
 function StackNavigator({ navigation }) {
   const Stack = createNativeStackNavigator();
@@ -142,6 +142,14 @@ function StackNavigator({ navigation }) {
                 title: "Hearing Assistant",
               }}
             />
+            <Stack.Screen
+              name="DeafMuteAssistantScreen"
+              component={DeafMuteAssistantScreen}
+              options={{
+                ...otherScreenOptions,
+                title: "Deaf & Mute Assistant",
+              }}
+              />
             <Stack.Screen
               name="AIAssistant"
               component={AIAssistantScreen}
