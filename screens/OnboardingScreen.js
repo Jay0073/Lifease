@@ -18,7 +18,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { FontAwesome5 } from "@expo/vector-icons";
 
-export default function OnboardingScreen({ navigation }) {
+export default function OnboardingScreen({ navigation, setIsUserOnboarded }) {
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
   const [disability, setDisability] = useState("");
@@ -77,24 +77,27 @@ export default function OnboardingScreen({ navigation }) {
         emergencyContact,
         emergencyPhone,
       };
+      // await AsyncStorage.setItem("userDetails", JSON.stringify(formData));
       await AsyncStorage.setItem("userDetails", JSON.stringify(formData));
-
-      // Reset navigation stack to home screen
-      navigation.replace("HomeScreen");
+      setIsUserOnboarded(true);
     } catch (error) {
-      Alert.alert("Error", "Failed to submit details. Please try again.");
+      console.error("Submit error:", error);
+      Alert.alert("Error", `Failed to submit details: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
   const handleSkip = async () => {
-    Haptics.selectionAsync();
-    const skipData = { skipped: true };
-    await AsyncStorage.setItem("userDetails", JSON.stringify(skipData));
-
-    // Reset navigation stack to home screen
-    navigation.replace("HomeScreen");
+    try {
+      await Haptics.selectionAsync();
+      const skipData = { skipped: true };
+      await AsyncStorage.setItem("userDetails", JSON.stringify(skipData));
+      setIsUserOnboarded(true);
+    } catch (error) {
+      console.error("Skip error:", error);
+      Alert.alert("Error", `Failed to skip: ${error.message}`);
+    }
   };
 
   const speakName = async () => {

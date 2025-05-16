@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Lifease",
-    "slug": "lifease",
+    "slug": "lifeasee",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -35,9 +35,8 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "googleCloudApiKey": "'AIzaSyDUMx_QeHw5mcovnOPmArVz-7VutmSzyh0';",
       "eas": {
-        "projectId": "1f5e8930-d4ed-475b-b2e3-3464fee181ff"
+        "projectId": "c1889f05-14d5-47cc-bc9c-662ef721bb41"
       }
     },
     "plugins": [

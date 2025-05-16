@@ -6,7 +6,6 @@ const BenefitsScreen = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Benefits Screen</Text>
-      {/* Add benefits content here */}
     </View>
   );
 };

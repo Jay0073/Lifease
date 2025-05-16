@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,251 +8,241 @@ import {
   SafeAreaView,
   Animated,
   Easing,
-  Platform, // Import Platform
+  Platform,
+  Alert,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Audio } from "expo-av";
-import * as FileSystem from "expo-file-system"; // Import FileSystem
+import { WebView } from "react-native-webview";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import * as Haptics from "expo-haptics";
 
 const { width, height } = Dimensions.get("window");
 
-// IMPORTANT: Replace with your actual server IP/domain in production
-const WEBSOCKET_URL = "ws://lifeasee-server.onrender.com/216.24.57.4:10000";
+// Web Speech API HTML with dynamic language support
+const WEB_SPEECH_HTML = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Speech Recognition</title>
+</head>
+<body>
+  <script>
+    let recognition = null;
+    let isListening = false;
+    let currentLang = 'en-US';
+
+    function initializeRecognition() {
+      try {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            error: 'speech_recognition_not_supported'
+          }));
+          return false;
+        }
+        recognition = new SpeechRecognition();
+        recognition.lang = currentLang;
+        recognition.interimResults = true;
+        recognition.continuous = true;
+
+        recognition.onresult = (event) => {
+          let transcript = event.results[event.resultIndex][0].transcript;
+          window.ReactNativeWebView.postMessage(JSON.stringify({ transcript }));
+        };
+
+        recognition.onerror = (event) => {
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            error: event.error
+          }));
+        };
+
+        recognition.onend = () => {
+          if (isListening) {
+            try {
+              recognition.start();
+            } catch (e) {
+              window.ReactNativeWebView.postMessage(JSON.stringify({
+                error: 'restart_failed_' + e.message
+              }));
+            }
+          }
+        };
+
+        return true;
+      } catch (e) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+          error: 'initialization_failed_' + e.message
+        }));
+        return false;
+      }
+    }
+
+    function startRecognition() {
+      if (!recognition) {
+        if (!initializeRecognition()) return;
+      }
+      try {
+        isListening = true;
+        recognition.start();
+        window.ReactNativeWebView.postMessage(JSON.stringify({ status: 'started' }));
+      } catch (e) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+          error: 'start_failed_' + e.message
+        }));
+      }
+    }
+
+    function stopRecognition() {
+      if (recognition && isListening) {
+        isListening = false;
+        recognition.stop();
+        window.ReactNativeWebView.postMessage(JSON.stringify({ status: 'stopped' }));
+      }
+    }
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      if (recognition) {
+        recognition.lang = lang;
+      }
+    }
+  </script>
+</body>
+</html>
+`;
+
+const API_KEY = "AIzaSyCtju80slt9-z-Otk1mKSnpoKCfR8jQRUw";
+const genAI = new GoogleGenerativeAI(API_KEY);
 
 const DeafAssistantScreen = () => {
   const [mode, setMode] = useState("audioToText");
-  const [isRecording, setIsRecording] = useState(false); // Renamed for clarity
+  const [isRecording, setIsRecording] = useState(false);
   const [pulseAnim] = useState(new Animated.Value(1));
   const [responseText, setResponseText] = useState("");
-  const [isConnecting, setIsConnecting] = useState(true); // Track WS connection status
-  const [connectionError, setConnectionError] = useState(null); // Store connection errors
-  const recordingInstanceRef = useRef(null); // Ref to store the recording object
-  const wsRef = useRef(null);
-  const recordingLoopActive = useRef(false); // Ref to control the recording loop
+  const [connectionError, setConnectionError] = useState(null);
+  const webViewRef = useRef(null);
+  const [fontSize, setFontSize] = useState(18);
+  const [selectedLanguage, setSelectedLanguage] = useState("en-US");
+  const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
 
-  // --- WebSocket Connection ---
+  const languages = [
+    { label: "English", code: "en-US" },
+    { label: "Hindi", code: "hi-IN" },
+    { label: "Tamil", code: "ta-IN" },
+    { label: "Telugu", code: "te-IN" },
+    { label: "Bengali", code: "bn-IN" },
+    { label: "Marathi", code: "mr-IN" },
+    { label: "Kannada", code: "kn-IN" },
+  ];
+
+  // Update WebView language when selectedLanguage changes
   useEffect(() => {
-    console.log("Attempting to initialize WebSocket...");
-    setIsConnecting(true);
-    setConnectionError(null);
-    const ws = new WebSocket(WEBSOCKET_URL);
-
-    ws.onopen = () => {
-      console.log("WebSocket connected");
-      setIsConnecting(false);
-      setConnectionError(null);
-    };
-
-    ws.onmessage = (evt) => {
-      // console.log("WebSocket message received:", evt.data); // Can be noisy
-      try {
-        const { transcript, isFinal } = JSON.parse(evt.data);
-        // Replace text with the latest transcript (interim or final)
-        // Google STT often sends the full refined sentence as interim
-        setResponseText(transcript);
-        // Optional: Add logic here if you want to handle final results differently
-        // e.g., append to a separate "final transcript" state.
-      } catch (e) {
-        console.error("Failed to parse WebSocket message:", e);
-      }
-    };
-
-    ws.onerror = (e) => {
-      console.error("WebSocket error:", e.message);
-      setConnectionError(
-        `WebSocket Error: ${e.message || "Failed to connect"}`
-      );
-      setIsConnecting(false);
-    };
-
-    ws.onclose = (e) => {
-      console.log(`WebSocket closed. Code: ${e.code}, Reason: ${e.reason}`);
-      setIsConnecting(false);
-      // Optionally attempt to reconnect or notify the user
-      if (isRecording) {
-        // If it closes while recording, stop the process
-        stopRecordingLogic();
-      }
-    };
-
-    wsRef.current = ws;
-
-    return () => {
-      console.log("Closing WebSocket connection...");
-      ws.close();
-      wsRef.current = null;
-      // Ensure recording stops if component unmounts
-      if (recordingInstanceRef.current) {
-        recordingInstanceRef.current.stopAndUnloadAsync().catch(console.error);
-        recordingInstanceRef.current = null;
-      }
-      recordingLoopActive.current = false; // Stop loop on unmount
-    };
-  }, []); // Empty dependency array ensures this runs once on mount
-
-  // --- Recording Logic ---
-  const startRecordingLogic = async () => {
-    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-      console.error("WebSocket not connected. Cannot start recording.");
-      setConnectionError("WebSocket not connected. Please wait or restart.");
-      setIsRecording(false); // Ensure state is correct
-      return;
+    if (webViewRef.current) {
+      webViewRef.current.injectJavaScript(`setLanguage('${selectedLanguage}');`);
     }
-    if (recordingLoopActive.current) {
-      console.log("Recording loop already active.");
-      return; // Prevent multiple loops
-    }
+  }, [selectedLanguage]);
 
-    console.log("Starting recording process...");
-    setIsRecording(true);
-    setResponseText(""); // Clear previous text
-    startPulse();
-    recordingLoopActive.current = true; // Signal loop is active
-
+  const translateText = async (text, targetLanguage) => {
     try {
-      await Audio.requestPermissionsAsync();
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
-
-      const recordingLoop = async () => {
-        // Check if we should continue looping
-        if (!recordingLoopActive.current) {
-          console.log("Recording loop stopped.");
-          if (recordingInstanceRef.current) {
-            await recordingInstanceRef.current.stopAndUnloadAsync();
-            recordingInstanceRef.current = null;
-          }
-          return;
-        }
-
-        console.log("Starting new recording segment...");
-        const recording = new Audio.Recording();
-        recordingInstanceRef.current = recording; // Store ref
-
-        try {
-          await recording.prepareToRecordAsync({
-            android: {
-              extension: ".wav",
-              outputFormat:
-                Audio.RECORDING_OPTION_ANDROID_OUTPUT_FORMAT_DEFAULT, // Let Expo handle format details if possible
-              audioEncoder:
-                Audio.RECORDING_OPTION_ANDROID_AUDIO_ENCODER_PCM_16BIT,
-              sampleRate: 16000,
-              numberOfChannels: 1,
-            },
-            ios: {
-              extension: ".wav", // Google prefers LINEAR16, WAV is container
-              audioQuality: Audio.RECORDING_OPTION_IOS_AUDIO_QUALITY_MAX, // Use high quality
-              sampleRate: 16000,
-              numberOfChannels: 1,
-              linearPCMBitDepth: 16,
-              linearPCMIsBigEndian: false,
-              linearPCMIsFloat: false,
-            },
-            web: {}, // Add web options if needed
-          });
-          await recording.startAsync();
-          console.log("Recording segment started.");
-
-          // Record for a short duration (e.g., 1500ms)
-          // Adjust this based on desired latency vs overhead trade-off
-          await new Promise((resolve) => setTimeout(resolve, 800));
-
-          // Check again if we should stop before processing
-          if (!recordingLoopActive.current) {
-            console.log("Stopping mid-segment due to external stop request.");
-            await recording.stopAndUnloadAsync();
-            recordingInstanceRef.current = null;
-            return; // Exit the loop
-          }
-
-          console.log("Stopping and unloading segment...");
-          await recording.stopAndUnloadAsync();
-          const uri = recording.getURI();
-          recordingInstanceRef.current = null; // Clear ref after use
-
-          // Wait 100ms to allow filesystem to potentially finish writing/flushing
-          await new Promise((resolve) => setTimeout(resolve, 100));
-
-          if (!uri) {
-            console.error("Failed to get recording URI.");
-            throw new Error("Recording URI is null"); // Throw to be caught below
-          }
-          console.log("Audio segment URI:", uri);
-
-          // Check WS connection again before sending
-          if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-            console.error(
-              "WebSocket disconnected during recording. Stopping loop."
-            );
-            setConnectionError("WebSocket disconnected.");
-            recordingLoopActive.current = false; // Stop the loop
-            setIsRecording(false); // Update UI state
-            stopPulse();
-            return;
-          }
-
-          // Read the audio file and send via WebSocket
-          const audioBase64 = await FileSystem.readAsStringAsync(uri, {
-            encoding: FileSystem.EncodingType.Base64,
-          });
-
-          console.log(
-            `Sending audio data (${audioBase64.length} chars base64)...`
-          );
-          wsRef.current.send(
-            JSON.stringify({ type: "audio_chunk", data: audioBase64 })
-          );
-
-          // Schedule the next loop iteration
-          // Use requestAnimationFrame for smoother looping if needed, or just call directly
-          recordingLoop();
-        } catch (error) {
-          console.error("Error within recording segment:", error);
-          // Attempt to clean up if an error occurred mid-segment
-          if (recordingInstanceRef.current) {
-            try {
-              await recordingInstanceRef.current.stopAndUnloadAsync();
-            } catch (cleanupError) {
-              console.error("Error during cleanup:", cleanupError);
-            }
-            recordingInstanceRef.current = null;
-          }
-          // Stop the entire process on error
-          recordingLoopActive.current = false;
-          setIsRecording(false);
-          stopPulse();
-          // Optionally display an error message to the user
-        }
-      };
-
-      recordingLoop(); // Start the first iteration
-    } catch (err) {
-      console.error("Failed to start recording process:", err);
-      setIsRecording(false);
-      stopPulse();
-      // Display error to user
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      const prompt = `Translate the following text to the language corresponding to the locale ${targetLanguage}. Return only the translated text. Text: "${text.trim()}"`;
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      return await response.text();
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Error", "Failed to translate text.");
+      return text;
     }
   };
 
-  const stopRecordingLogic = async () => {
-    console.log("Stopping recording process...");
-    recordingLoopActive.current = false; // Signal the loop to stop
-    stopPulse(); // Stop animation
-    setIsRecording(false); // Update UI state immediately
+  const toggleLanguageDropdown = () => {
+    setShowLanguageDropdown(!showLanguageDropdown);
+    Haptics.selectionAsync();
+  };
 
-    // Send a message to backend that client stopped sending audio (optional but good practice)
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      console.log("Sending end_audio signal to server.");
-      wsRef.current.send(JSON.stringify({ type: "end_audio" }));
-    } else {
-      console.warn("WebSocket not open when trying to send end_audio signal.");
+  const adjustFontSize = (change) => {
+    setFontSize((prevSize) => Math.max(10, prevSize + change));
+    Haptics.selectionAsync();
+  };
+
+  const clearText = () => {
+    setResponseText("");
+    Haptics.selectionAsync();
+  };
+
+  // Request microphone permissions
+  const requestMicrophonePermission = async () => {
+    const { status } = await Audio.requestPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert(
+        "Microphone Permission Required",
+        "Please enable microphone access in your device settings.",
+        [{ text: "OK" }]
+      );
+      return false;
     }
+    return true;
+  };
 
-    // The loop will detect recordingLoopActive.current === false and clean up
-    // Any active recording instance using recordingInstanceRef.current.
+  // Handle WebView messages
+  const handleWebViewMessage = (event) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      console.log("WebView message:", data);
+      if (data.transcript) {
+        setResponseText(data.transcript);
+      } else if (data.error) {
+        console.error("WebView error:", data.error);
+        setConnectionError(
+          data.error.includes("not_supported")
+            ? "Speech recognition is not supported on this device."
+            : `Speech recognition error: ${data.error}`
+        );
+        if (isRecording) {
+          setIsRecording(false);
+          stopPulse();
+          Alert.alert(
+            "Speech Recognition Error",
+            data.error.includes("not_supported")
+              ? "Speech recognition is not supported on this device."
+              : "Failed to recognize speech. Please try again.",
+            [{ text: "OK" }]
+          );
+        }
+      } else if (data.status) {
+        console.log("Recognition status:", data.status);
+      }
+    } catch (error) {
+      console.error("WebView message parsing error:", error);
+      setConnectionError("Failed to process speech recognition data.");
+    }
+  };
+
+  // Start speech recognition
+  const startRecordingLogic = async () => {
+    const hasPermission = await requestMicrophonePermission();
+    if (!hasPermission) return;
+
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setIsRecording(true);
+    setResponseText("");
+    startPulse();
+    if (webViewRef.current) {
+      webViewRef.current.injectJavaScript("startRecognition();");
+    }
+  };
+
+  // Stop speech recognition
+  const stopRecordingLogic = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setIsRecording(false);
+    setResponseText("");
+    stopPulse();
+    if (webViewRef.current) {
+      webViewRef.current.injectJavaScript("stopRecognition();");
+    }
   };
 
   const handleRecordToggle = () => {
@@ -265,7 +255,7 @@ const DeafAssistantScreen = () => {
 
   const startPulse = () => {
     console.log("Starting pulse animation...");
-    pulseAnim.setValue(1); // Reset before starting
+    pulseAnim.setValue(1);
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
@@ -286,14 +276,12 @@ const DeafAssistantScreen = () => {
 
   const stopPulse = () => {
     console.log("Stopping pulse animation...");
-    // Find the animation attached to pulseAnim and stop it
     pulseAnim.stopAnimation();
-    pulseAnim.setValue(1); // Reset scale
+    pulseAnim.setValue(1);
   };
 
   const handleOutsideMode = () => {
     console.log("Outside Mode button pressed - (Not implemented)");
-    // Implement functionality for Outside Mode here
   };
 
   const handleToggleMode = () => {
@@ -301,14 +289,12 @@ const DeafAssistantScreen = () => {
     setMode((prevMode) =>
       prevMode === "audioToSign" ? "audioToText" : "audioToSign"
     );
-    setResponseText(""); // Clear text when switching mode
-    // Log the *new* mode after state update (use effect or log calculation directly)
+    setResponseText("");
     console.log(
       "Mode toggled to:",
       mode === "audioToSign" ? "audioToText" : "audioToSign"
     );
     if (isRecording) {
-      // Stop recording if mode is toggled while recording
       stopRecordingLogic();
     }
   };
@@ -317,11 +303,59 @@ const DeafAssistantScreen = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
+        {/* Hidden WebView for Web Speech API */}
+        <View style={styles.webViewContainer}>
+          <WebView
+            ref={webViewRef}
+            source={{ html: WEB_SPEECH_HTML }}
+            onMessage={handleWebViewMessage}
+            style={{ flex: 1 }}
+            originWhitelist={["*"]}
+            javaScriptEnabled={true}
+            domStorageEnabled={true}
+          />
+        </View>
+
         {/* Display Area */}
         <View style={styles.displayArea}>
-          {isConnecting ? (
-            <Text style={styles.displayText}>Connecting to server...</Text>
-          ) : connectionError ? (
+          <View style={styles.topRightButtons}>
+            <TouchableOpacity onPress={clearText}>
+              <Ionicons name="trash" size={26} color="#e74c3c" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={toggleLanguageDropdown}>
+              <Ionicons name="globe" size={27} color="#3498db" />
+            </TouchableOpacity>
+          </View>
+
+          {showLanguageDropdown && (
+            <View style={styles.languageDropdown}>
+              {languages.map((lang) => (
+                <TouchableOpacity
+                  key={lang.code}
+                  style={[
+                    styles.languageChip,
+                    selectedLanguage === lang.code &&
+                      styles.selectedLanguageChip,
+                  ]}
+                  onPress={async () => {
+                    setSelectedLanguage(lang.code);
+                    setShowLanguageDropdown(false);
+                    if (responseText.trim() !== "" && lang.code !== null) {
+                      const translatedText = await translateText(
+                        responseText,
+                        lang.code
+                      );
+                      setResponseText(translatedText);
+                    }
+                  }}
+                >
+                  <Text style={styles.languageText}>{lang.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {connectionError ? (
             <Text style={[styles.displayText, styles.errorText]}>
               {connectionError}
             </Text>
@@ -331,13 +365,13 @@ const DeafAssistantScreen = () => {
               <Text style={styles.displayText}>
                 Sign Output (Not Implemented)
               </Text>
-              {/* Add your Sign Language display component here */}
             </View>
           ) : (
-            // Audio to Text Mode
             <View style={styles.signArea}>
               {responseText ? (
-                <Text style={styles.largeResponseText}>{responseText}</Text>
+                <Text style={[styles.largeResponseText, { fontSize }]}>
+                  {responseText}
+                </Text>
               ) : isRecording ? (
                 <Text style={styles.displayText}>Listening...</Text>
               ) : null}
@@ -345,27 +379,35 @@ const DeafAssistantScreen = () => {
           )}
         </View>
 
+        {/* Font Adjustment and Other Buttons */}
+        <View style={styles.accessibilityOptions}>
+          <TouchableOpacity onPress={() => adjustFontSize(-2)}>
+            <Text style={styles.accessibilityButton}>Font -</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => adjustFontSize(2)}>
+            <Text style={styles.accessibilityButton}>Font +</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Button Bar */}
         <View style={styles.buttonBar}>
-          {/* Outside Mode Button */}
           <TouchableOpacity
             style={styles.smallButton}
             onPress={handleOutsideMode}
             activeOpacity={0.7}
             accessibilityRole="button"
-            disabled={isRecording} // Disable during recording
+            disabled={isRecording}
           >
             <Ionicons name="navigate-circle-outline" size={30} color="white" />
           </TouchableOpacity>
 
-          {/* Record Button */}
           <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
             <TouchableOpacity
               style={styles.largeButton}
-              onPress={handleRecordToggle} // Use the combined toggle handler
+              onPress={handleRecordToggle}
               activeOpacity={0.7}
               accessibilityRole="button"
-              disabled={isConnecting || !!connectionError} // Disable if not connected
+              disabled={!!connectionError}
             >
               <Ionicons
                 name={isRecording ? "stop-circle" : "mic-circle"}
@@ -375,13 +417,12 @@ const DeafAssistantScreen = () => {
             </TouchableOpacity>
           </Animated.View>
 
-          {/* Toggle Mode Button */}
           <TouchableOpacity
             style={styles.smallButton}
             onPress={handleToggleMode}
             activeOpacity={0.7}
             accessibilityRole="button"
-            disabled={isRecording} // Disable during recording
+            disabled={isRecording}
           >
             <Ionicons
               name={mode === "audioToSign" ? "text" : "hand-left-outline"}
@@ -395,7 +436,6 @@ const DeafAssistantScreen = () => {
   );
 };
 
-// --- Styles --- (Keep your existing styles, adding errorText style)
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -406,6 +446,11 @@ const styles = StyleSheet.create({
     padding: 20,
     justifyContent: "space-between",
   },
+  webViewContainer: {
+    height: 0,
+    width: 0,
+    position: "absolute",
+  },
   displayArea: {
     flex: 1,
     backgroundColor: "#ffffff",
@@ -414,32 +459,32 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
     padding: 20,
-    elevation: 5, // Android shadow
-    shadowColor: "#000", // iOS shadow
+    elevation: 5,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
   signArea: {
-    alignItems: "center",
-    justifyContent: "center",
-    width: "100%", // Ensure text wraps
+    alignItems: "flex-start",
+    justifyContent: "flex-start",
+    width: "100%",
   },
   displayText: {
     fontSize: 18,
-    color: "#34495e", // Darker text
+    color: "#34495e",
     marginTop: 10,
-    textAlign: "center", // Center align text
-    paddingHorizontal: 10, // Add padding for longer text
+    textAlign: "left",
+    paddingHorizontal: 10,
   },
   errorText: {
-    color: "#e74c3c", // Use error color for errors
+    color: "#e74c3c",
     fontWeight: "bold",
   },
   largeResponseText: {
-    fontSize: 32, // Large font size for response text
+    fontSize: 32,
     color: "#34495e",
-    textAlign: "center",
+    textAlign: "left",
     fontWeight: "bold",
     paddingHorizontal: 10,
   },
@@ -474,6 +519,55 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.5,
     shadowRadius: 6,
+  },
+  accessibilityOptions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginHorizontal: 10,
+    marginBottom: 12,
+  },
+  accessibilityButton: {
+    fontSize: 16,
+    color: "#007AFF",
+    fontWeight: "600",
+    paddingHorizontal: 10,
+  },
+  topRightButtons: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    flexDirection: "row",
+    gap: 10,
+  },
+  languageDropdown: {
+    position: "absolute",
+    top: 50,
+    right: 10,
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    borderRadius: 12,
+    padding: 8,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 6,
+    zIndex: 1000,
+    width: 120,
+  },
+  languageChip: {
+    backgroundColor: "#E5E5EA",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    marginVertical: 4,
+  },
+  selectedLanguageChip: {
+    backgroundColor: "#007AFF",
+  },
+  languageText: {
+    fontSize: 14,
+    color: "#333",
+    fontWeight: "600",
   },
 });
 

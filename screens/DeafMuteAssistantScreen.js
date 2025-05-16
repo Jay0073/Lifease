@@ -20,7 +20,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import Constants from 'expo-constants';
 
 // Secure Gemini API Key
-const API_KEY = Constants.expoConfig?.extra?.geminiApiKey || 'YOUR_API_KEY_HERE';
+const API_KEY = "AIzaSyCtju80slt9-z-Otk1mKSnpoKCfR8jQRUw";
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 // Web Speech API HTML
@@ -119,6 +119,7 @@ const DeafAndMuteAssistantScreen = () => {
   const [history, setHistory] = useState([]);
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
   const webViewRef = useRef(null);
+  const [selectedCategory, setSelectedCategory] = useState("Greetings");
   const buttonScale = useRef(new Animated.Value(1)).current;
 
   // Language options
@@ -130,12 +131,11 @@ const DeafAndMuteAssistantScreen = () => {
 
   const [fontSize, setFontSize] = useState(20);
   // Quick phrases
-  const quickPhrases = {
-    Greetings: ['Hello', 'Good morning', 'Goodbye'],
-    Needs: ['Help', 'Water', 'Food'],
-    Responses: ['Yes', 'No', 'Thank you'],
+   const quickPhrases = {
+    Greetings: ["Hello", "Good morning", "How are you?", "Goodbye"],
+    Needs: ["I need help", "Water please", "Bathroom", "Food"],
+    Emotions: ["I am happy", "I am sad", "I am tired", "I am okay"],
   };
-  const [selectedCategory, setSelectedCategory] = useState('Responses');
 
   // Button press animation
   const animateButton = () => {
@@ -173,12 +173,10 @@ const DeafAndMuteAssistantScreen = () => {
   const handleWebViewMessage = (event) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
-      console.log('WebView message:', data);
       if (data.transcript) {
         setText(data.transcript);
         saveToHistory(data.transcript);
       } else if (data.error) {
-        console.error('WebView error:', data.error);
         if (isListening) {
           setIsListening(false);
           Alert.alert(
@@ -338,7 +336,7 @@ const DeafAndMuteAssistantScreen = () => {
           onPress={clearText}
           accessibilityLabel="Clear text"
         >
-          <Ionicons name="close-circle" size={24} color="#fff" />
+          <Ionicons name="trash" size={24} color="#fff" />
         </TouchableOpacity>
       </LinearGradient>
 
@@ -383,31 +381,30 @@ const DeafAndMuteAssistantScreen = () => {
         </View>
       )} */}
 
-      {/* Quick Phrases */}
-      <View style={styles.quickPhrasesContainer}>
+      <View style={styles.quickTextContainer}>
+        <Text style={styles.sectionTitle}>Commonly Used Phrases</Text>
         <View style={styles.categorySelector}>
           {Object.keys(quickPhrases).map((category) => (
             <TouchableOpacity
               key={category}
               style={[
-                styles.categoryButton,
-                selectedCategory === category && styles.selectedCategoryButton,
+                styles.categoryChip,
+                selectedCategory === category && styles.selectedCategoryChip,
               ]}
               onPress={() => setSelectedCategory(category)}
             >
-              <Text style={styles.categoryButtonText}>{category}</Text>
+              <Text style={styles.categoryText}>{category}</Text>
             </TouchableOpacity>
           ))}
         </View>
-        <View style={styles.quickPhrases}>
-          {quickPhrases[selectedCategory].map((phrase, index) => (
+        <View style={styles.phraseGrid}>
+          {quickPhrases[selectedCategory].map((item, index) => (
             <TouchableOpacity
               key={index}
-              style={styles.quickPhraseButton}
-              onPress={() => insertQuickPhrase(phrase)}
-              accessibilityLabel={`Quick phrase: ${phrase}`}
+              style={styles.quickTextChip}
+              onPress={() => setText(item)}
             >
-              <Text style={styles.quickPhraseText}>{phrase}</Text>
+              <Text style={styles.quickText}>{item}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -444,13 +441,10 @@ const DeafAndMuteAssistantScreen = () => {
               style={styles.buttonGradient}
             >
               <Ionicons
-                name={isListening ? 'stop-circle' : 'mic-circle'}
+                name={isListening ? 'stop-outline' : 'mic-outline'}
                 size={40}
                 color="#fff"
               />
-              <Text style={styles.buttonText}>
-                {isListening ? 'Stop' : 'Listen'}
-              </Text>
             </LinearGradient>
           </TouchableOpacity>
         </Animated.View>
@@ -465,13 +459,10 @@ const DeafAndMuteAssistantScreen = () => {
               style={styles.buttonGradient}
             >
               <Ionicons
-                name={isSpeaking ? 'stop-circle' : 'volume-high'}
-                size={40}
+                name={isSpeaking ? 'stop-outline' : 'volume-medium-outline'}
+                size={46}
                 color="#fff"
               />
-              <Text style={styles.buttonText}>
-                {isSpeaking ? 'Stop' : 'Speak'}
-              </Text>
             </LinearGradient>
           </TouchableOpacity>
         </Animated.View>
@@ -485,8 +476,7 @@ const DeafAndMuteAssistantScreen = () => {
               colors={['#FF6F61', '#FF9A76']}
               style={styles.buttonGradient}
             >
-              <Ionicons name="sparkles" size={40} color="#fff" />
-              <Text style={styles.buttonText}>Enhance</Text>
+              <Ionicons name="sparkles-outline" size={38} color="#fff" />
             </LinearGradient>
           </TouchableOpacity>
         </Animated.View>
@@ -529,7 +519,7 @@ const styles = StyleSheet.create({
   },
   textInput: {
     flex: 0,
-    height: 330, // Increased height for bigger text box
+    height: 360, // Increased height for bigger text box
     backgroundColor: '#fff',
     borderRadius: 10,
     padding: 20,
@@ -580,51 +570,68 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-  quickPhrasesContainer: {
-    backgroundColor: '#fff',
+  quickTextContainer: {
+    backgroundColor: "#E8F0FE",
     borderRadius: 10,
-    padding: 10,
-    marginBottom: 15,
-    elevation: 3,
-    shadowColor: '#000',
+    padding: 12,
+    marginBottom: 12,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
+    shadowRadius: 4,
   },
   categorySelector: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 10,
+    flexDirection: "row",
+    justifyContent: "center",
+    marginBottom: 8,
+    marginTop: 10,
+    paddingBottom: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E0E0E0",
   },
-  categoryButton: {
-    backgroundColor: '#E5E5EA',
-    padding: 8,
-    borderRadius: 8,
+  categoryChip: {
+    backgroundColor: "#D1D1D6",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    marginHorizontal: 9,
+    borderWidth: 1,
+    borderColor: "#C0C0C0",
   },
-  selectedCategoryButton: {
-    backgroundColor: '#007AFF',
+  selectedCategoryChip: {
+    backgroundColor: "#007AFF",
+    borderColor: "#005BB5",
   },
-  categoryButtonText: {
-    color: '#333',
+  categoryText: {
     fontSize: 14,
-    fontWeight: '600',
+    color: "#333",
+    fontWeight: "600",
   },
-  quickPhrases: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
+  phraseGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
   },
-  quickPhraseButton: {
-    backgroundColor: '#007AFF',
-    padding: 10,
-    borderRadius: 8,
-    margin: 5,
+  quickTextChip: {
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    margin: 4,
+    width: "45%",
+    alignItems: "center",
     elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
   },
-  quickPhraseText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '500',
+  quickText: {
+    fontSize: 14,
+    color: "#333",
+    fontWeight: "500",
+    textAlign: "center",
   },
   historyContainer: {
     flexDirection: 'row',
@@ -654,9 +661,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   button: {
-    width: 100,
-    height: 100,
-    borderRadius: 20,
+    width: 90,
+    height: 90,
+    borderRadius: 50,
     elevation: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -669,16 +676,10 @@ const styles = StyleSheet.create({
   stopButton: {},
   buttonGradient: {
     flex: 1,
-    borderRadius: 20,
+    borderRadius: 50,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 10,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginTop: 5,
   },
 });
 
