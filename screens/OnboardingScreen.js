@@ -31,10 +31,10 @@ export default function OnboardingScreen({ navigation, setIsUserOnboarded }) {
 
   const disabilities = [
     { label: "Blind", value: "blind" },
-    { label: "Deaf", value: "deaf" },
+    { label: "Deaf", value:"voice assistant" },
     { label: "Mute", value: "mute" },
-    { label: "Motor-Impaired", value: "motor-impaired" },
-    { label: "Other", value: "other" },
+    { label: "Deaf & Mute", value: "Deaf & Mute" },
+    { label: "normal user", value: "normal user" },
   ];
 
   const languages = [

@@ -40,6 +40,7 @@
     "react-native-dotenv": "^3.4.11",
     "react-native-emoji-picker": "^0.2.2",
     "react-native-gesture-handler": "^2.20.2",
+    "react-native-modal": "^14.0.0-rc.1",
     "react-native-modalize": "^2.1.1",
     "react-native-paper": "^5.14.4",
     "react-native-portalize": "^1.0.7",
@@ -56,6 +57,7 @@
   "devDependencies": {
     "@babel/core": "^7.20.0",
     "@types/react": "~18.3.12",
+    "depcheck": "^1.4.7",
     "typescript": "^5.3.3"
   },
   "expo": {

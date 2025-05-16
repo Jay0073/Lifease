@@ -519,7 +519,7 @@ const styles = StyleSheet.create({
   },
   textInput: {
     flex: 0,
-    height: 360, // Increased height for bigger text box
+    height: 310, // Increased height for bigger text box
     backgroundColor: '#fff',
     borderRadius: 10,
     padding: 20,

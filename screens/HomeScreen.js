@@ -12,10 +12,11 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
-const { width } = Dimensions.get('window');
+const { width,height } = Dimensions.get('window');
 const padding = 15;
 const gap = 15;
 const optionSize = (width - padding * 2 - gap) / 2;
+const largeOptionSize = width - padding * 2; // Full width for prioritized module
 
 const HomeScreen = ({ navigation, route }) => {
   const [userDetails, setUserDetails] = useState({});
@@ -28,6 +29,73 @@ const HomeScreen = ({ navigation, route }) => {
     };
     loadData();
   }, [route.params]);
+
+  // Map disability to corresponding module
+  const getPrioritizedModule = (disability) => {
+    switch (disability) {
+      case 'blind':
+        return 'Blind Assistant';
+      case 'voice assistant': // Labeled as "Deaf" in dropdown
+        return 'Hearing Assistant';
+      case 'mute':
+        return 'Voice Assistant';
+      case 'Deaf & Mute':
+        return 'Deaf & Mute Assistant';
+      case 'normal':  
+      return 'AI Assistant';
+      default:
+        return null; // No prioritization for 'normal' or undefined
+    }
+  };
+
+  const prioritizedModule = getPrioritizedModule(userDetails.disability);
+
+  // Define all modules
+  const modules = [
+    {
+      name: 'Blind Assistant',
+      icon: 'eye-outline',
+      route: 'VisualAssistant',
+      accessibilityLabel: 'Blind Assistant button',
+      accessibilityHint: 'Tap to access visual assistance features',
+    },
+    {
+      name: 'Voice Assistant',
+      icon: 'volume-high-outline',
+      route: 'DumbAssistant',
+      accessibilityLabel: 'Voice Assistant button',
+      accessibilityHint: 'Tap to access voice accessibility features',
+    },
+    {
+      name: 'Hearing Assistant',
+      icon: 'ear-outline',
+      route: 'DeafAssistant',
+      accessibilityLabel: 'Hearing Assistant button',
+      accessibilityHint: 'Tap to access auditory accessibility features',
+    },
+    {
+      name: 'AI Assistant',
+      icon: 'sparkles-outline',
+      route: 'AIAssistant',
+      accessibilityLabel: 'AI Assistant button',
+      accessibilityHint: 'Tap to access AI-powered assistance',
+    },
+    {
+      name: 'Deaf & Mute Assistant',
+      icon: 'accessibility-outline',
+      route: 'DeafMuteAssistantScreen',
+      accessibilityLabel: 'Deaf & Mute Assistant button',
+      accessibilityHint: 'Tap to access deaf & mute assistance',
+    },
+  ];
+
+  // Reorder modules to prioritize the user's selected disability
+  const sortedModules = prioritizedModule
+    ? [
+        ...modules.filter((module) => module.name === prioritizedModule),
+        ...modules.filter((module) => module.name !== prioritizedModule),
+      ]
+    : modules;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -58,51 +126,37 @@ const HomeScreen = ({ navigation, route }) => {
 
           {/* Options Section */}
           <View style={styles.optionsContainer}>
-            <TouchableOpacity
-              style={styles.optionButton}
-              onPress={() => navigation.navigate('VisualAssistant')}
-              accessibilityLabel="Blind Assistant button"
-              accessibilityHint="Tap to access visual assistance features"
-            >
-              <Ionicons name="eye-outline" size={40} color="#fff" />
-              <Text style={styles.optionText}>Blind Assistant</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.optionButton}
-              onPress={() => navigation.navigate('DumbAssistant')}
-              accessibilityLabel="Dumb Assistant button"
-              accessibilityHint="Tap to access voice accessibility features"
-            >
-              <Ionicons name="volume-high-outline" size={40} color="#fff" />
-              <Text style={styles.optionText}>Voice Assistant</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.optionButton}
-              onPress={() => navigation.navigate('DeafAssistant')}
-              accessibilityLabel="Deaf Assistant button"
-              accessibilityHint="Tap to access auditory accessibility features"
-            >
-              <Ionicons name="ear-outline" size={40} color="#fff" />
-              <Text style={styles.optionText}>Hearing Assistant</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.optionButton}
-              onPress={() => navigation.navigate('AIAssistant')}
-              accessibilityLabel="AI Assistant button"
-              accessibilityHint="Tap to access AI-powered assistance"
-            >
-              <Ionicons name="sparkles-outline" size={40} color="#fff" />
-              <Text style={styles.optionText}>AI Assistant</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.optionButton}
-              onPress={() => navigation.navigate('DeafMuteAssistantScreen')}
-              accessibilityLabel="Deaf & Mute Assistant button"
-              accessibilityHint="Tap to access deaf & mute assistance"
-            >
-              <Ionicons name="accessibility-outline" size={40} color="#fff" />
-              <Text style={styles.optionText}>Deaf & Mute Assistant </Text>
-            </TouchableOpacity>
+            {sortedModules.map((module, index) => {
+              const isPrioritized = prioritizedModule === module.name;
+              return (
+                <TouchableOpacity
+                  key={module.name}
+                  style={[
+                    styles.optionButton,
+                    isPrioritized
+                      ? { width: largeOptionSize, height: largeOptionSize }
+                      : { width: optionSize, height: optionSize },
+                  ]}
+                  onPress={() => navigation.navigate(module.route)}
+                  accessibilityLabel={
+                    isPrioritized
+                      ? `Prioritized ${module.accessibilityLabel}`
+                      : module.accessibilityLabel
+                  }
+                  accessibilityHint={module.accessibilityHint}
+                >
+                  <Ionicons name={module.icon} size={isPrioritized ? 60 : 40} color="#fff" />
+                  <Text
+                    style={[
+                      styles.optionText,
+                      isPrioritized && { fontSize: 24 },
+                    ]}
+                  >
+                    {module.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
 
           {/* Placeholder Footer */}
@@ -212,8 +266,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   optionButton: {
-    width: optionSize,
-    height: optionSize,
     backgroundColor: '#3498db',
     borderRadius: 15,
     justifyContent: 'center',
