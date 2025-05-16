@@ -1,8 +1,11 @@
 import React from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useNavigation } from '@react-navigation/native';
 
-export function PopupMenu({ visible, onClose, navigation }) {
+export function PopupMenu({ visible, onClose }) {
+  const navigation = useNavigation(); // Use hook to get navigation
+
   const menuItems = [
     { label: 'Home', icon: 'home-outline', screen: 'HomeScreen' },
     { label: 'Profile', icon: 'person-outline', screen: 'Profile' },
@@ -12,7 +15,6 @@ export function PopupMenu({ visible, onClose, navigation }) {
     { label: 'Tutorial', icon: 'book-outline', screen: 'Help' },
     { label: 'Feedback', icon: 'chatbubble-ellipses-outline', screen: 'Help' },
   ];
-  
 
   return (
     <Modal transparent visible={visible} animationType="fade">

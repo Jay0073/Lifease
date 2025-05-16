@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,24 +7,26 @@ import {
   ScrollView,
   SafeAreaView,
   Image,
-} from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import * as Haptics from 'expo-haptics';
+} from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import * as Haptics from "expo-haptics";
 
-const ProfileScreen = ({ navigation, route }) => {
+const ProfileScreen = ({ navigation, route, setIsUserOnboarded }) => {
   const [userDetails, setUserDetails] = useState({
-    name: 'Lifease User',
-    disability: 'N/A',
-    language: 'N/A',
-    emergencyContact: 'N/A',
-    emergencyPhone: 'N/A',
+    name: "Lifease User",
+    disability: "N/A",
+    language: "N/A",
+    emergencyContact: "N/A",
+    emergencyPhone: "N/A",
   });
 
   useEffect(() => {
     const loadData = async () => {
-      const stored = await AsyncStorage.getItem('userDetails');
-      const parsed = stored ? JSON.parse(stored) : route.params?.userDetails || {};
+      const stored = await AsyncStorage.getItem("userDetails");
+      const parsed = stored
+        ? JSON.parse(stored)
+        : route.params?.userDetails || {};
       setUserDetails((prev) => ({
         ...prev,
         ...parsed,
@@ -35,27 +37,37 @@ const ProfileScreen = ({ navigation, route }) => {
 
   const handleEditProfile = () => {
     Haptics.selectionAsync();
-    console.log('Edit Profile pressed');
+    console.log("Edit Profile pressed");
     // TODO: Navigate to Edit Profile screen
   };
 
   const handleAccessibilitySettings = () => {
     Haptics.selectionAsync();
-    navigation.navigate('Settings');
+    navigation.navigate("Settings");
   };
+
+  // const handleLogout = async () => {
+  //   Haptics.selectionAsync();
+  //   await AsyncStorage.removeItem("userDetails");
+
+  //   navigation.reset({
+  //     index: 0,
+  //     routes: [{ name: "OnboardingScreen" }], // must match the AuthNavigator screen name
+  //   });
+  // };
 
   const handleLogout = async () => {
     Haptics.selectionAsync();
-    await AsyncStorage.removeItem('userDetails');
-    navigation.navigate('OnboardingScreen');
+    await AsyncStorage.removeItem("userDetails");
+    setIsUserOnboarded(false); // triggers re-render to AuthNavigator
   };
 
   const ProfileOptionButton = ({
     iconName,
     label,
     onPress,
-    iconColor = '#3498db',
-    textColor = '#34495e',
+    iconColor = "#3498db",
+    textColor = "#34495e",
     accessibilityLabel,
     accessibilityHint,
     hideArrow = false,
@@ -68,9 +80,16 @@ const ProfileScreen = ({ navigation, route }) => {
       accessibilityHint={accessibilityHint}
       accessible={true}
     >
-      <Ionicons name={iconName} size={24} color={iconColor} style={styles.optionIcon} />
+      <Ionicons
+        name={iconName}
+        size={24}
+        color={iconColor}
+        style={styles.optionIcon}
+      />
       <Text style={[styles.optionText, { color: textColor }]}>{label}</Text>
-      {!hideArrow && <Ionicons name="chevron-forward-outline" size={24} color="#bdc3c7" />}
+      {!hideArrow && (
+        <Ionicons name="chevron-forward-outline" size={24} color="#bdc3c7" />
+      )}
     </TouchableOpacity>
   );
 
@@ -80,22 +99,18 @@ const ProfileScreen = ({ navigation, route }) => {
         <View style={styles.container}>
           {/* Profile Header */}
           <View style={styles.profileHeader}>
-            {userDetails.profilePictureUrl ? (
-              <Image
-                source={{ uri: userDetails.profilePictureUrl }}
-                style={styles.avatar}
-                accessibilityLabel={`${userDetails.name}'s profile picture`}
-                accessible={true}
+            <View
+              style={styles.avatarPlaceholder}
+              accessible={true}
+              accessibilityLabel="User avatar placeholder"
+            >
+              <Ionicons
+                name="person-circle-outline"
+                size={120}
+                color="#bdc3c7"
               />
-            ) : (
-              <View
-                style={styles.avatarPlaceholder}
-                accessible={true}
-                accessibilityLabel="User avatar placeholder"
-              >
-                <Ionicons name="person-circle-outline" size={120} color="#bdc3c7" />
-              </View>
-            )}
+            </View>
+
             <Text style={styles.userName} accessibilityRole="text">
               {userDetails.name}
             </Text>
@@ -159,7 +174,7 @@ const ProfileScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f0f4f8',
+    backgroundColor: "#f0f4f8",
   },
   scrollContainer: {
     flexGrow: 1,
@@ -167,29 +182,29 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: '#f0f4f8',
+    backgroundColor: "#f0f4f8",
     paddingHorizontal: 20,
     paddingTop: 20,
-    alignItems: 'center',
+    alignItems: "center",
   },
   profileHeader: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 30,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#cfd8dc',
-    width: '100%',
+    borderBottomColor: "#cfd8dc",
+    width: "100%",
   },
   avatarPlaceholder: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: '#ecf0f1',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#ecf0f1",
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 15,
     elevation: 3,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
@@ -200,54 +215,54 @@ const styles = StyleSheet.create({
     borderRadius: 60,
     marginBottom: 15,
     elevation: 3,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
   },
   userName: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2c3e50',
+    fontWeight: "bold",
+    color: "#2c3e50",
     marginBottom: 5,
   },
   userType: {
     fontSize: 16,
-    color: '#3498db',
-    fontStyle: 'italic',
+    color: "#3498db",
+    fontStyle: "italic",
     marginTop: 5,
   },
   userInfo: {
     fontSize: 16,
-    color: '#7f8c8d',
+    color: "#7f8c8d",
     marginTop: 5,
   },
   card: {
-    width: '100%',
-    backgroundColor: '#fff',
+    width: "100%",
+    backgroundColor: "#fff",
     borderRadius: 10,
     marginBottom: 20,
     elevation: 3,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   cardTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#34495e',
+    fontWeight: "bold",
+    color: "#34495e",
     paddingHorizontal: 20,
     paddingTop: 15,
     paddingBottom: 10,
   },
   optionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 15,
     paddingHorizontal: 20,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     minHeight: 48,
   },
   optionIcon: {
@@ -256,11 +271,11 @@ const styles = StyleSheet.create({
   optionText: {
     flex: 1,
     fontSize: 18,
-    color: '#34495e',
+    color: "#34495e",
   },
   separator: {
     height: 1,
-    backgroundColor: '#cfd8dc',
+    backgroundColor: "#cfd8dc",
     marginLeft: 20,
     marginRight: 20,
   },
