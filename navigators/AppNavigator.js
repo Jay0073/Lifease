@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import HomeScreen from "../screens/HomeScreen";
 import { View, Text, StyleSheet } from "react-native";
@@ -17,8 +17,6 @@ import DeafAndMuteAssistantScreen from "../screens/DeafMuteAssistantScreen";
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator({ setIsUserOnboarded }) {
-
-  
   const screenOptions = {
     headerStyle: { backgroundColor: "#ffffff" },
     headerTitleAlign: "left",
@@ -56,13 +54,15 @@ export default function AppNavigator({ setIsUserOnboarded }) {
     },
   };
 
-  const screenOptionsWithHeaderMenu = (title) => ({
+  const screenOptionsWithHeaderMenu = useCallback((title) => ({
     ...otherScreenOptions,
     title,
     headerRight: () => (
-      <HeaderMenu setIsUserOnboarded={setIsUserOnboarded} />
+      <View style={{ marginRight: 10, zIndex: 1000 }}>
+        <HeaderMenu setIsUserOnboarded={setIsUserOnboarded} />
+      </View>
     ),
-  });
+  }), [setIsUserOnboarded]);
 
   return (
     <Stack.Navigator>
@@ -74,8 +74,10 @@ export default function AppNavigator({ setIsUserOnboarded }) {
           headerLeft: () => null,
           gestureEnabled: false,
           headerRight: () => (
-      <HeaderMenu setIsUserOnboarded={setIsUserOnboarded} />
-    ),
+            <View style={{ marginRight: 10, zIndex: 1000 }}>
+              <HeaderMenu setIsUserOnboarded={setIsUserOnboarded} />
+            </View>
+          ),
         }}
       >
         {({ route, navigation }) => (
