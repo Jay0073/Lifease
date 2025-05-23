@@ -14,7 +14,7 @@ const DeafMuteAssistantScreen = () => {
   const [quickPhrases, setQuickPhrases] = useState([]);
   const [fontSize, setFontSize] = useState(20);
 
-  const API_KEY = 'AIzaSyDUMx_QeHw5mcovnOPmArVz-7VutmSzyh0'; // Your Google Cloud API Key
+  const API_KEY = 'AIzaSyDUMx_QeHw5mcovnOPmArVz-7VutmSzyh0'; 
   const API_URL = 'https://texttospeech.googleapis.com/v1/text:synthesize';
 
   useEffect(() => {
