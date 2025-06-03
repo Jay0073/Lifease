@@ -17,7 +17,6 @@ import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import Constants from 'expo-constants';
 
 // Secure Gemini API Key
 const API_KEY = "AIzaSyCtju80slt9-z-Otk1mKSnpoKCfR8jQRUw";
