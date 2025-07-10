@@ -83,3 +83,54 @@ npm install
 
 # Start Expo server
 expo start
+```
+
+Use the **Expo Go** app on your Android device to scan the QR code and run the app.
+
+---
+
+## 📱 Usage
+
+1. **Onboarding**: Set up your profile and choose accessibility needs.
+2. **Home Screen**: Select the required accessibility mode.
+3. **Accessibility Modes**:
+   - **Blind Mode**: Capture surroundings using the camera and listen to descriptions.
+   - **Deaf Mode**: Communicate via text and receive sign language translations.
+   - **Mute Mode**: Type text to be spoken aloud.
+   - **AI Assist Mode**: Converse with AI through voice or text.
+4. **Profile**: Manage your preferences and settings.
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository.
+2. Create a new branch for your feature or bug fix.
+3. Commit your changes.
+4. Push to your branch.
+5. Create a pull request.
+
+Please ensure your code follows the project’s coding standards and includes appropriate tests.
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.  
+> _(Note: Update this section if a different license applies.)_
+
+---
+
+## 🙏 Acknowledgements
+
+- Developed by students at **Bharati Vidyapeeth's Institute of Engineering and Technology**.
+- Built with **React Native** and **Expo**.
+- Integrated with **Google Generative AI (Gemini model)**.
+
+**Special thanks to all contributors and supporters of the project.**
+
+---
+
+> Lifease Assistant effectively improves accessibility for individuals with different abilities by offering customized communication tools and user-friendly features. With upcoming updates, it strives to further close the gaps in independence and connectivity.
