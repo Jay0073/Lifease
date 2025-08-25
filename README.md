@@ -7,7 +7,6 @@ It supports:
 - **Speech-impaired users** with text-to-speech and speech-to-text capabilities.
 - **Visually-impaired users** with a Visual Assistant to describe surroundings.
 - **Deaf users** via a Deaf Assistant with sign language conversion.
-- **Cognitive accessibility** through predictive text and adjustable settings.
 
 Integrated with **Google Generative AI (Gemini model)**, it provides context-aware conversational support.
 
@@ -134,3 +133,4 @@ This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) f
 ---
 
 > Lifease Assistant effectively improves accessibility for individuals with different abilities by offering customized communication tools and user-friendly features. With upcoming updates, it strives to further close the gaps in independence and connectivity.
+
